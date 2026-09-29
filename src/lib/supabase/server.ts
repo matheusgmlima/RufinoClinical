@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 import { publicEnv } from "@/lib/env/public";
 
+import { authCookieOptions } from "./cookies";
 import type { Database } from "./database.types";
 
 /** Per-request client that acts as the signed-in user, so RLS applies. */
@@ -14,6 +15,7 @@ export async function createClient() {
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
+      cookieOptions: authCookieOptions,
       cookies: {
         getAll() {
           return cookieStore.getAll();
