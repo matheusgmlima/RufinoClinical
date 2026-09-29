@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/* Brand tokens — see DESIGN.md */
+@theme {
+  --color-wine: #6e0b1e;
+  --color-wine-deep: #3f0611;
+  --color-nude: #e2bba9;
+  --color-blush: #f4eae6;
+  --color-cream: #fbf7f4;
+  --color-ink: #1f1a1b;
+  --color-ink-muted: #6f615f;
+  --color-line: #e8ddd8;
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-syncopate), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-cream);
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background: var(--color-wine);
+    color: var(--color-cream);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-wine);
+    outline-offset: 3px;
+  }
+}
