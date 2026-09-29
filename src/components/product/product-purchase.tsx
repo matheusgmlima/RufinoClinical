@@ -1,12 +1,13 @@
 "use client";
 
 import { Check, ShoppingBag } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/cart-provider";
 import { QuantityStepper } from "@/components/cart/cart-contents";
 import { Button } from "@/components/ui/button";
 import type { ProductVariant, StoreSettings } from "@/lib/catalog/queries";
+import { formatBRL, pixPriceCents } from "@/lib/money";
 
 import { Price } from "./price";
 
@@ -26,6 +27,21 @@ export function ProductPurchase({
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const { add, setOpen } = useCart();
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const [showBar, setShowBar] = useState(false);
+
+  // On phones, a buy bar slides in once the main button has scrolled out of view above.
+  useEffect(() => {
+    const el = actionsRef.current;
+    if (!el) return;
+    // The huge bottom margin makes "below the viewport" count as intersecting, so the state only
+    // flips when the button passes the top edge, even on a fast fling that skips over the viewport.
+    const observer = new IntersectionObserver(([entry]) => setShowBar(!entry.isIntersecting), {
+      rootMargin: "0px 0px 100000px 0px",
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const variant = variants.find((v) => v.id === variantId) ?? firstAvailable;
   const soldOut = variant.stock < 1;
@@ -85,7 +101,7 @@ export function ProductPurchase({
         </fieldset>
       ) : null}
 
-      <div className="space-y-3">
+      <div ref={actionsRef} className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           {!soldOut ? (
             <QuantityStepper value={quantity} max={maxQuantity} label={productName} onChange={setQuantity} />
@@ -102,6 +118,29 @@ export function ProductPurchase({
               ? `Restam só ${variant.stock} ${variant.stock === 1 ? "unidade" : "unidades"}.`
               : "Em estoque, pronto para envio."}
         </p>
+      </div>
+
+      <div
+        inert={!showBar}
+        className={`fixed inset-x-0 bottom-0 z-20 border-t border-line bg-cream/95 px-4 pt-3 backdrop-blur-md transition-transform duration-300 ease-out pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden ${
+          showBar ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-ink">
+              {productName}
+              {variants.length > 1 ? <span className="font-medium text-ink-muted"> · {variant.name}</span> : null}
+            </p>
+            <p className="text-sm font-semibold text-wine tabular-nums">
+              {formatBRL(pixPriceCents(variant.priceCents, settings.pixDiscountPercent))} no Pix
+            </p>
+          </div>
+          <Button onClick={handleAdd} disabled={soldOut}>
+            <ShoppingBag size={18} aria-hidden="true" />
+            {soldOut ? "Esgotado" : "Adicionar"}
+          </Button>
+        </div>
       </div>
     </div>
   );
