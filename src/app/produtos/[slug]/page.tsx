@@ -1,4 +1,4 @@
-import { ArrowCounterClockwise, Info, PixLogo, Truck } from "@phosphor-icons/react/ssr";
+import { ArrowCounterClockwise, Info, PixLogo, Plus, Truck } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -27,6 +27,22 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
     ? (await getProducts({ categorySlug: product.category.slug })).filter((p) => p.id !== product.id).slice(0, 4)
     : [];
   const gallery = product.images.length > 0 ? product.images : [null];
+  const healthNotice = (
+    <p className="flex gap-3 text-sm text-ink-muted">
+      <Info size={20} className="shrink-0 text-wine" aria-hidden="true" />
+      Produto para saúde. Use com orientação de um fisioterapeuta ou médico.
+    </p>
+  );
+  // On phones the long texts collapse into expandable rows.
+  const details = [
+    {
+      title: "Descrição",
+      body: product.description,
+      extra: product.anvisaRegistration ? `Registro Anvisa: ${product.anvisaRegistration}` : null,
+    },
+    { title: "Modo de uso", body: product.usageInstructions, extra: null },
+    { title: "Indicações", body: product.indications, extra: null },
+  ].filter((d) => d.body);
 
   return (
     <>
@@ -94,7 +110,25 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
           </div>
         </div>
 
-        <section className="mt-20 grid gap-10 lg:grid-cols-12 lg:gap-16" aria-labelledby="sobre-produto">
+        <section className="mt-10 lg:hidden" aria-label="Detalhes do produto">
+          <div className="divide-y divide-line border-y border-line">
+            {details.map((d) => (
+              <details key={d.title} className="group">
+                <summary className="flex cursor-pointer items-center justify-between gap-6 py-4 text-base font-semibold text-ink">
+                  {d.title}
+                  <Plus size={18} weight="bold" className="shrink-0 transition group-open:rotate-45" aria-hidden="true" />
+                </summary>
+                <div className="space-y-3 pb-5 text-sm leading-relaxed text-ink-muted">
+                  <p>{d.body}</p>
+                  {d.extra ? <p>{d.extra}</p> : null}
+                </div>
+              </details>
+            ))}
+          </div>
+          <div className="mt-5">{healthNotice}</div>
+        </section>
+
+        <section className="mt-20 hidden gap-16 lg:grid lg:grid-cols-12" aria-labelledby="sobre-produto">
           <div className="lg:col-span-7">
             <h2 id="sobre-produto" className="text-2xl font-semibold tracking-tight text-ink">
               Sobre o produto
@@ -119,19 +153,16 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
                 <p className="mt-2 text-sm leading-relaxed text-ink-muted">{product.indications}</p>
               </div>
             ) : null}
-            <p className="flex gap-3 text-sm text-ink-muted">
-              <Info size={20} className="shrink-0 text-wine" aria-hidden="true" />
-              Produto para saúde. Use com orientação de um fisioterapeuta ou médico.
-            </p>
+            {healthNotice}
           </div>
         </section>
       </div>
 
       {related.length > 0 ? (
         <section className="border-t border-line bg-blush/50">
-          <div className="container-page py-20">
+          <div className="container-page py-14 lg:py-20">
             <h2 className="text-2xl font-semibold tracking-tight text-ink md:text-3xl">Combina com</h2>
-            <div className="mt-10 grid grid-cols-2 gap-x-5 gap-y-12 lg:grid-cols-4">
+            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 lg:mt-10 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-12">
               {related.map((p) => (
                 <ProductCard key={p.id} product={p} settings={settings} />
               ))}
