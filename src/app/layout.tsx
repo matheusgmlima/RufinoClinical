@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     template: "%s | Rufino Clinical",
   },
   description: "Tapes, compressão e materiais de pós-operatório para fisioterapia dermatofuncional.",
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "Rufino Clinical",
+  },
   // Keep the store out of search engines until launch.
   robots: { index: false, follow: false },
 };
