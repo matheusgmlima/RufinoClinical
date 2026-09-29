@@ -1,28 +1,47 @@
-import { Logo } from "@/components/brand/logo";
+import { ArrowRight } from "@phosphor-icons/react/ssr";
+import Link from "next/link";
 
-export default function Home() {
+import { Benefits } from "@/components/home/benefits";
+import { CategoriesBento } from "@/components/home/categories-bento";
+import { Faq } from "@/components/home/faq";
+import { Hero } from "@/components/home/hero";
+import { Statement } from "@/components/home/statement";
+import { ProductCard } from "@/components/product/product-card";
+import { getCategories, getProducts, getStoreSettings } from "@/lib/catalog/queries";
+
+export default async function Home() {
+  const [settings, featured, categories] = await Promise.all([
+    getStoreSettings(),
+    getProducts({ featured: true }),
+    getCategories(),
+  ]);
+  const spotlight = featured.find((p) => p.inStock) ?? null;
+
   return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-24">
-      {/* Two tape strips crossing the background, echoing the monogram */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 top-1/4 h-16 w-[140%] -rotate-12 rounded-full bg-blush"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 bottom-[10%] h-10 w-[120%] rotate-6 rounded-full bg-nude/40"
-      />
+    <>
+      <Hero spotlight={spotlight} settings={settings} />
+      <Benefits settings={settings} />
 
-      <div className="relative flex max-w-xl flex-col items-center text-center">
-        <Logo orientation="vertical" className="text-wine" />
-        <p className="mt-14 font-brand text-[0.7rem] tracking-[0.35em] text-ink-muted">EM BREVE</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-balance text-ink sm:text-5xl">
-          Produtos para fisioterapia dermatofuncional
-        </h1>
-        <p className="mt-5 text-lg leading-relaxed text-pretty text-ink-muted">
-          Tapes, bandagens e compressão selecionados por quem usa na prática clínica.
-        </p>
-      </div>
-    </main>
+      {featured.length > 0 ? (
+        <section className="container-page py-20 lg:py-28">
+          <div className="flex items-end justify-between gap-6">
+            <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">Mais procurados</h2>
+            <Link href="/produtos" className="group inline-flex items-center gap-2 text-sm font-semibold text-wine">
+              Ver todos
+              <ArrowRight size={16} weight="bold" className="transition group-hover:translate-x-1" aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="mt-10 grid grid-cols-2 gap-x-5 gap-y-12 lg:grid-cols-4">
+            {featured.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} settings={settings} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <Statement />
+      <CategoriesBento categories={categories} />
+      <Faq settings={settings} />
+    </>
   );
 }
