@@ -57,3 +57,12 @@ Contraste: `wine` sobre `cream` ≈ 11:1; `ink-muted` sobre `cream` ≈ 5.5:1. O
 - Preço sempre com parcelamento e o valor no Pix.
 - Cantos arredondados que ecoam as pontas da fita (raio 16–28 px em cards, pill em botões).
 - Muito respiro. Fundo creme, blocos blush, vinho como acento, nunca como fundo dominante da página inteira.
+
+## Decisões de interface (Fase 2)
+
+- Tema único claro, por decisão de marca: creme com acento vinho, e fotos de produto funcionam melhor em fundo claro.
+- Raios: cards e painéis `rounded-2xl` (16 px), painéis de marca `rounded-[28px]`, todo controle interativo (botão, pill, stepper) totalmente arredondado.
+- Tipografia da interface: Manrope. Syncopate só no logotipo.
+- Ícones: Phosphor, traço regular.
+- Z-index: header 30, overlay 40, gaveta 50.
+- Produto sem foto mostra o símbolo R em vinho 10% sobre blush. Não é imagem definitiva.
