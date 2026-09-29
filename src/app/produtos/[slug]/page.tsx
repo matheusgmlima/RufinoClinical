@@ -1,0 +1,144 @@
+import { ArrowCounterClockwise, Info, PixLogo, Truck } from "@phosphor-icons/react/ssr";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { ProductCard } from "@/components/product/product-card";
+import { ProductImage } from "@/components/product/product-image";
+import { ProductPurchase } from "@/components/product/product-purchase";
+import { getProductBySlug, getProducts, getStoreSettings } from "@/lib/catalog/queries";
+
+export async function generateMetadata({ params }: PageProps<"/produtos/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
+  if (!product) return { title: "Produto não encontrado" };
+  return {
+    title: product.seoTitle ?? product.name,
+    description: product.seoDescription ?? product.shortDescription ?? undefined,
+  };
+}
+
+export default async function ProductPage({ params }: PageProps<"/produtos/[slug]">) {
+  const { slug } = await params;
+  const [product, settings] = await Promise.all([getProductBySlug(slug), getStoreSettings()]);
+  if (!product) notFound();
+
+  const related = product.category
+    ? (await getProducts({ categorySlug: product.category.slug })).filter((p) => p.id !== product.id).slice(0, 4)
+    : [];
+  const gallery = product.images.length > 0 ? product.images : [null];
+
+  return (
+    <>
+      <div className="container-page pb-20 pt-8 lg:pt-10">
+        <nav aria-label="Você está em" className="text-sm text-ink-muted">
+          <ol className="flex flex-wrap items-center gap-2">
+            <li>
+              <Link href="/produtos" className="hover:text-wine">
+                Produtos
+              </Link>
+            </li>
+            {product.category ? (
+              <>
+                <li aria-hidden="true">/</li>
+                <li>
+                  <Link href={`/produtos?categoria=${product.category.slug}`} className="hover:text-wine">
+                    {product.category.name}
+                  </Link>
+                </li>
+              </>
+            ) : null}
+          </ol>
+        </nav>
+
+        <div className="mt-6 grid gap-10 lg:grid-cols-12 lg:gap-16">
+          <div className="grid gap-4 lg:col-span-7">
+            <ProductImage image={gallery[0]} sizes="(min-width: 1024px) 55vw, 100vw" priority className="aspect-square" />
+            {gallery.length > 1 ? (
+              <div className="grid grid-cols-4 gap-4">
+                {gallery.slice(1, 5).map((image, i) => (
+                  <ProductImage key={i} image={image} sizes="14vw" className="aspect-square" />
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="lg:col-span-5">
+            <div className="lg:sticky lg:top-24">
+              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-ink text-balance md:text-4xl">
+                {product.name}
+              </h1>
+              {product.shortDescription ? (
+                <p className="mt-3 text-lg leading-relaxed text-ink-muted">{product.shortDescription}</p>
+              ) : null}
+
+              <div className="mt-8">
+                <ProductPurchase productName={product.name} variants={product.variants} settings={settings} />
+              </div>
+
+              <ul className="mt-9 space-y-3 border-t border-line pt-6 text-sm text-ink-muted">
+                <li className="flex items-center gap-3">
+                  <PixLogo size={20} className="text-wine" aria-hidden="true" />
+                  {settings.pixDiscountPercent}% de desconto pagando com Pix
+                </li>
+                <li className="flex items-center gap-3">
+                  <Truck size={20} className="text-wine" aria-hidden="true" />
+                  Frete para todo o Brasil, calculado pelo CEP
+                </li>
+                <li className="flex items-center gap-3">
+                  <ArrowCounterClockwise size={20} className="text-wine" aria-hidden="true" />
+                  7 dias para desistir após o recebimento
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <section className="mt-20 grid gap-10 lg:grid-cols-12 lg:gap-16" aria-labelledby="sobre-produto">
+          <div className="lg:col-span-7">
+            <h2 id="sobre-produto" className="text-2xl font-semibold tracking-tight text-ink">
+              Sobre o produto
+            </h2>
+            {product.description ? (
+              <p className="mt-4 max-w-[65ch] leading-relaxed text-ink-muted">{product.description}</p>
+            ) : null}
+            {product.anvisaRegistration ? (
+              <p className="mt-4 text-sm text-ink-muted">Registro Anvisa: {product.anvisaRegistration}</p>
+            ) : null}
+          </div>
+          <div className="grid gap-4 lg:col-span-5">
+            {product.usageInstructions ? (
+              <div className="rounded-2xl bg-blush p-6">
+                <h3 className="font-semibold text-ink">Modo de uso</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{product.usageInstructions}</p>
+              </div>
+            ) : null}
+            {product.indications ? (
+              <div className="rounded-2xl border border-line p-6">
+                <h3 className="font-semibold text-ink">Indicações</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{product.indications}</p>
+              </div>
+            ) : null}
+            <p className="flex gap-3 text-sm text-ink-muted">
+              <Info size={20} className="shrink-0 text-wine" aria-hidden="true" />
+              Produto para saúde. Use com orientação de um fisioterapeuta ou médico.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      {related.length > 0 ? (
+        <section className="border-t border-line bg-blush/50">
+          <div className="container-page py-20">
+            <h2 className="text-2xl font-semibold tracking-tight text-ink md:text-3xl">Combina com</h2>
+            <div className="mt-10 grid grid-cols-2 gap-x-5 gap-y-12 lg:grid-cols-4">
+              {related.map((p) => (
+                <ProductCard key={p.id} product={p} settings={settings} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
