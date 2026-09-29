@@ -23,6 +23,7 @@ export function CategoriesBento({ categories }: { categories: Category[] }) {
         {categories.map((category, i) => {
           const surface = bento ? cells[i] : "bg-blush text-ink min-h-56";
           const dark = surface.includes("bg-wine");
+          const tinted = surface.includes("bg-nude");
           return (
             <Link
               key={category.slug}
@@ -38,7 +39,9 @@ export function CategoriesBento({ categories }: { categories: Category[] }) {
               <div className="relative">
                 <h3 className="text-xl font-semibold tracking-tight">{category.name}</h3>
                 {category.description ? (
-                  <p className={`mt-2 max-w-xs text-sm leading-relaxed ${dark ? "text-cream/75" : "text-ink-muted"}`}>
+                  <p
+                    className={`mt-2 max-w-xs text-sm leading-relaxed ${dark ? "text-cream/75" : tinted ? "text-ink/80" : "text-ink-muted"}`}
+                  >
                     {category.description}
                   </p>
                 ) : null}

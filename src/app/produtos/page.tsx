@@ -49,6 +49,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/produto
         </ul>
       </nav>
 
+      <h2 className="sr-only">Lista de produtos</h2>
       {products.length > 0 ? (
         <div className="mt-12 grid grid-cols-2 gap-x-5 gap-y-12 lg:grid-cols-4">
           {products.map((product) => (

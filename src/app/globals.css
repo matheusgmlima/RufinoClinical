@@ -105,3 +105,15 @@ details > summary {
 details > summary::-webkit-details-marker {
   display: none;
 }
+
+/* Honor "reduce motion": no transitions, transforms on hover or animations anywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

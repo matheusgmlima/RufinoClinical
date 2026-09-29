@@ -12,11 +12,11 @@ export function Header({ categories, settings }: { categories: Category[]; setti
   return (
     <>
       {settings ? (
-        <div className="bg-wine text-cream">
+        <aside aria-label="Condições de pagamento" className="bg-wine text-cream">
           <p className="container-page flex h-9 items-center justify-center text-center text-xs font-medium tracking-wide">
             {settings.pixDiscountPercent}% off no Pix e até {settings.maxInstallments}x sem juros
           </p>
-        </div>
+        </aside>
       ) : null}
       <header className="sticky top-0 z-30 border-b border-line/70 bg-cream/90 backdrop-blur-md">
         <div className="container-page flex h-16 items-center gap-12 lg:h-[4.5rem]">

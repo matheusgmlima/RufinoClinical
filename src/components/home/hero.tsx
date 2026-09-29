@@ -10,7 +10,7 @@ export function Hero({ spotlight, settings }: { spotlight: ProductSummary | null
   return (
     <section className="container-page grid items-center gap-8 pb-12 pt-8 lg:grid-cols-12 lg:gap-16 lg:pb-24 lg:pt-16">
       <div className="lg:col-span-6">
-        <h1 className="rise-in max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight text-ink text-balance md:text-5xl lg:text-6xl">
+        <h1 className="max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight text-ink text-balance md:text-5xl lg:text-6xl">
           Do consultório para a sua recuperação
         </h1>
         <p
