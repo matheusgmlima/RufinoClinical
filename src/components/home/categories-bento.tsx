@@ -6,10 +6,10 @@ import type { Category } from "@/lib/catalog/queries";
 
 // Four cells with distinct surfaces. Any other category count falls back to an even grid.
 const cells = [
-  "bg-wine text-cream lg:row-span-2 min-h-72 lg:min-h-full",
-  "bg-blush text-ink lg:col-span-2 min-h-56",
-  "bg-nude/45 text-ink min-h-56",
-  "bg-cream text-ink border border-line min-h-56",
+  "bg-wine text-cream lg:row-span-2 min-h-52 lg:min-h-full",
+  "bg-blush text-ink lg:col-span-2 min-h-44 lg:min-h-56",
+  "bg-nude/45 text-ink min-h-44 lg:min-h-56",
+  "bg-cream text-ink border border-line min-h-44 lg:min-h-56",
 ];
 
 export function CategoriesBento({ categories }: { categories: Category[] }) {
@@ -17,9 +17,9 @@ export function CategoriesBento({ categories }: { categories: Category[] }) {
   const bento = categories.length === 4;
 
   return (
-    <section className="container-page py-20 lg:py-28">
+    <section className="container-page py-14 lg:py-28">
       <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">Compre por necessidade</h2>
-      <div className={`mt-10 grid gap-4 ${bento ? "lg:grid-cols-3 lg:grid-rows-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+      <div className={`mt-8 grid gap-3 lg:mt-10 lg:gap-4 ${bento ? "lg:grid-cols-3 lg:grid-rows-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         {categories.map((category, i) => {
           const surface = bento ? cells[i] : "bg-blush text-ink min-h-56";
           const dark = surface.includes("bg-wine");
@@ -27,7 +27,7 @@ export function CategoriesBento({ categories }: { categories: Category[] }) {
             <Link
               key={category.slug}
               href={`/produtos?categoria=${category.slug}`}
-              className={`group relative flex flex-col justify-end overflow-hidden rounded-2xl p-7 transition hover:-translate-y-0.5 ${surface}`}
+              className={`group relative flex flex-col justify-end overflow-hidden rounded-2xl p-6 lg:p-7 transition hover:-translate-y-0.5 ${surface}`}
             >
               {i === 0 && bento ? (
                 <LogoSymbol className="absolute -right-10 -top-8 h-[85%] w-auto text-cream/[0.08]" />

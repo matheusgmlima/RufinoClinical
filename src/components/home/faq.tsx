@@ -27,8 +27,8 @@ export function Faq({ settings }: { settings: StoreSettings }) {
   ];
 
   return (
-    <section id="duvidas" className="container-page scroll-mt-24 py-20 lg:py-28">
-      <div className="grid gap-10 lg:grid-cols-12">
+    <section id="duvidas" className="container-page scroll-mt-24 py-14 lg:py-28">
+      <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
         <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl lg:col-span-4">Dúvidas frequentes</h2>
         <div className="divide-y divide-line border-y border-line lg:col-span-8">
           {items.map(({ q, a }) => (
