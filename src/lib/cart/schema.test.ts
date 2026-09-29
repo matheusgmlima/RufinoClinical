@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cartSchema, MAX_CART_LINES, normalizeCart } from "./schema";
+import { cartSchema, MAX_CART_LINES, normalizeCart, parseCartItem } from "./schema";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
@@ -30,5 +30,19 @@ describe("normalizeCart", () => {
       { variantId: id(1), quantity: 99 },
       { variantId: id(2), quantity: 1 },
     ]);
+  });
+});
+
+describe("parseCartItem (browser storage)", () => {
+  it("keeps valid lines and strips extra fields", () => {
+    expect(parseCartItem({ variantId: id(1), quantity: 2, priceCents: 1 })).toEqual({ variantId: id(1), quantity: 2 });
+  });
+
+  it("rejects malformed lines", () => {
+    expect(parseCartItem({ variantId: "not-a-uuid", quantity: 1 })).toBeNull();
+    expect(parseCartItem({ variantId: id(1), quantity: 0 })).toBeNull();
+    expect(parseCartItem({ variantId: id(1), quantity: 100 })).toBeNull();
+    expect(parseCartItem({ variantId: id(1), quantity: "2" })).toBeNull();
+    expect(parseCartItem(null)).toBeNull();
   });
 });
