@@ -3,11 +3,13 @@
 Loja de produtos para fisioterapia dermatofuncional (tapes, bandagens, compressão).
 Tom: clínico, moderno, acolhedor. Premium sem ser frio.
 
-Fonte da verdade visual: [Figma — Rufino Clinical Logo](https://www.figma.com/design/cbv2YKOJBclk84X89uz6h6), página **Logo final**.
+Fonte da verdade do logo: `public/brand/`, gerado por `scripts/build-brand.mjs`. O [Figma](https://www.figma.com/design/cbv2YKOJBclk84X89uz6h6) guarda os conceitos e a primeira versão do lockup.
 
 ## Logo
 
 Monograma **R** montado com três tiras de fita de pontas arredondadas (haste, bojo e perna), separadas por pequenos respiros, como fitas de kinesio aplicadas.
+
+Lockup: "CLINICAL" fica logo abaixo de "RUFINO", justificado letra a letra na mesma largura, com traço reforçado para leitura em tamanho pequeno. No horizontal, o símbolo tem cerca de 1,6 vez a altura do bloco de texto.
 
 | Arquivo | Uso |
 |---|---|
@@ -62,7 +64,7 @@ Contraste: `wine` sobre `cream` ≈ 11:1; `ink-muted` sobre `cream` ≈ 5.5:1. O
 
 - Tema único claro, por decisão de marca: creme com acento vinho, e fotos de produto funcionam melhor em fundo claro.
 - Raios: cards e painéis `rounded-2xl` (16 px), painéis de marca `rounded-[28px]`, todo controle interativo (botão, pill, stepper) totalmente arredondado.
-- Tipografia da interface: Manrope. Syncopate só no logotipo.
+- Tipografia da interface: Manrope. O logotipo é sempre o SVG de `public/brand` (a fonte Syncopate não é carregada no site).
 - Ícones: Phosphor, traço regular.
-- Z-index: header 30, overlay 40, gaveta 50.
+- Z-index: barra de compra no celular 20, header 30, overlay 40, gaveta 50.
 - Produto sem foto mostra o símbolo R em vinho 10% sobre blush. Não é imagem definitiva.
