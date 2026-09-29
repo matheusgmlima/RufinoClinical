@@ -10,6 +10,7 @@ import type { ProductVariant, StoreSettings } from "@/lib/catalog/queries";
 import { formatBRL, pixPriceCents } from "@/lib/money";
 
 import { Price } from "./price";
+import { useProductView } from "./product-view";
 
 const LOW_STOCK = 5;
 
@@ -23,7 +24,7 @@ export function ProductPurchase({
   settings: StoreSettings;
 }) {
   const firstAvailable = variants.find((v) => v.stock > 0) ?? variants[0];
-  const [variantId, setVariantId] = useState(firstAvailable.id);
+  const { variantId, setVariantId } = useProductView();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const { add, setOpen } = useCart();

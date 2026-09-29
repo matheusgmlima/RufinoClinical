@@ -4,8 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProductCard } from "@/components/product/product-card";
-import { ProductImage } from "@/components/product/product-image";
+import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductPurchase } from "@/components/product/product-purchase";
+import { ProductView } from "@/components/product/product-view";
 import { getProductBySlug, getProducts, getStoreSettings } from "@/lib/catalog/queries";
 
 export async function generateMetadata({ params }: PageProps<"/produtos/[slug]">): Promise<Metadata> {
@@ -26,7 +27,7 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
   const related = product.category
     ? (await getProducts({ categorySlug: product.category.slug })).filter((p) => p.id !== product.id).slice(0, 4)
     : [];
-  const gallery = product.images.length > 0 ? product.images : [null];
+  const initialVariant = product.variants.find((v) => v.stock > 0) ?? product.variants[0];
   const healthNotice = (
     <p className="flex gap-3 text-sm text-ink-muted">
       <Info size={20} className="shrink-0 text-wine" aria-hidden="true" />
@@ -67,48 +68,43 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
           </ol>
         </nav>
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="grid gap-4 lg:col-span-7">
-            <ProductImage image={gallery[0]} sizes="(min-width: 1024px) 55vw, 100vw" priority className="aspect-square" />
-            {gallery.length > 1 ? (
-              <div className="grid grid-cols-4 gap-4">
-                {gallery.slice(1, 5).map((image, i) => (
-                  <ProductImage key={i} image={image} sizes="14vw" className="aspect-square" />
-                ))}
+        <ProductView initialVariantId={initialVariant.id}>
+          <div className="mt-6 grid gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-7">
+              <ProductGallery images={product.images} productName={product.name} />
+            </div>
+
+            <div className="lg:col-span-5">
+              <div className="lg:sticky lg:top-24">
+                <h1 className="text-3xl font-semibold leading-tight tracking-tight text-ink text-balance md:text-4xl">
+                  {product.name}
+                </h1>
+                {product.shortDescription ? (
+                  <p className="mt-3 text-lg leading-relaxed text-ink-muted">{product.shortDescription}</p>
+                ) : null}
+
+                <div className="mt-8">
+                  <ProductPurchase productName={product.name} variants={product.variants} settings={settings} />
+                </div>
+
+                <ul className="mt-9 space-y-3 border-t border-line pt-6 text-sm text-ink-muted">
+                  <li className="flex items-center gap-3">
+                    <PixLogo size={20} className="text-wine" aria-hidden="true" />
+                    {settings.pixDiscountPercent}% de desconto pagando com Pix
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Truck size={20} className="text-wine" aria-hidden="true" />
+                    Frete para todo o Brasil, calculado pelo CEP
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <ArrowCounterClockwise size={20} className="text-wine" aria-hidden="true" />
+                    7 dias para desistir após o recebimento
+                  </li>
+                </ul>
               </div>
-            ) : null}
-          </div>
-
-          <div className="lg:col-span-5">
-            <div className="lg:sticky lg:top-24">
-              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-ink text-balance md:text-4xl">
-                {product.name}
-              </h1>
-              {product.shortDescription ? (
-                <p className="mt-3 text-lg leading-relaxed text-ink-muted">{product.shortDescription}</p>
-              ) : null}
-
-              <div className="mt-8">
-                <ProductPurchase productName={product.name} variants={product.variants} settings={settings} />
-              </div>
-
-              <ul className="mt-9 space-y-3 border-t border-line pt-6 text-sm text-ink-muted">
-                <li className="flex items-center gap-3">
-                  <PixLogo size={20} className="text-wine" aria-hidden="true" />
-                  {settings.pixDiscountPercent}% de desconto pagando com Pix
-                </li>
-                <li className="flex items-center gap-3">
-                  <Truck size={20} className="text-wine" aria-hidden="true" />
-                  Frete para todo o Brasil, calculado pelo CEP
-                </li>
-                <li className="flex items-center gap-3">
-                  <ArrowCounterClockwise size={20} className="text-wine" aria-hidden="true" />
-                  7 dias para desistir após o recebimento
-                </li>
-              </ul>
             </div>
           </div>
-        </div>
+        </ProductView>
 
         <section className="mt-10 lg:hidden" aria-label="Detalhes do produto">
           <div className="divide-y divide-line border-y border-line">
