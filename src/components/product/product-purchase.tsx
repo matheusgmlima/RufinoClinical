@@ -1,0 +1,108 @@
+"use client";
+
+import { Check, ShoppingBag } from "@phosphor-icons/react";
+import { useState } from "react";
+
+import { useCart } from "@/components/cart/cart-provider";
+import { QuantityStepper } from "@/components/cart/cart-contents";
+import { Button } from "@/components/ui/button";
+import type { ProductVariant, StoreSettings } from "@/lib/catalog/queries";
+
+import { Price } from "./price";
+
+const LOW_STOCK = 5;
+
+export function ProductPurchase({
+  productName,
+  variants,
+  settings,
+}: {
+  productName: string;
+  variants: ProductVariant[];
+  settings: StoreSettings;
+}) {
+  const firstAvailable = variants.find((v) => v.stock > 0) ?? variants[0];
+  const [variantId, setVariantId] = useState(firstAvailable.id);
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
+  const { add, setOpen } = useCart();
+
+  const variant = variants.find((v) => v.id === variantId) ?? firstAvailable;
+  const soldOut = variant.stock < 1;
+  const maxQuantity = Math.max(1, Math.min(variant.stock, 99));
+
+  function selectVariant(id: string) {
+    setVariantId(id);
+    setQuantity(1);
+    setAdded(false);
+  }
+
+  function handleAdd() {
+    add(variant.id, Math.min(quantity, maxQuantity));
+    setAdded(true);
+    setOpen(true);
+  }
+
+  return (
+    <div className="space-y-7">
+      <Price
+        priceCents={variant.priceCents}
+        compareAtPriceCents={variant.compareAtPriceCents}
+        settings={settings}
+        size="lg"
+      />
+
+      {variants.length > 1 ? (
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-semibold text-ink">
+            Opção: <span className="font-medium text-ink-muted">{variant.name}</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {variants.map((v) => {
+              const selected = v.id === variant.id;
+              const unavailable = v.stock < 1;
+              return (
+                <label
+                  key={v.id}
+                  className={`relative inline-flex h-10 min-w-12 cursor-pointer items-center justify-center rounded-full border px-4 text-sm font-medium transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-wine ${
+                    selected ? "border-wine bg-wine text-cream" : "border-line bg-cream text-ink hover:border-wine/50"
+                  } ${unavailable ? "text-ink-muted line-through decoration-1" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="variant"
+                    value={v.id}
+                    checked={selected}
+                    onChange={() => selectVariant(v.id)}
+                    className="sr-only"
+                  />
+                  {v.name}
+                  {unavailable ? <span className="sr-only"> (esgotado)</span> : null}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      ) : null}
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {!soldOut ? (
+            <QuantityStepper value={quantity} max={maxQuantity} label={productName} onChange={setQuantity} />
+          ) : null}
+          <Button size="lg" onClick={handleAdd} disabled={soldOut} className="flex-1 sm:flex-none">
+            {added ? <Check size={20} weight="bold" aria-hidden="true" /> : <ShoppingBag size={20} aria-hidden="true" />}
+            {soldOut ? "Esgotado" : added ? "Adicionado" : "Adicionar ao carrinho"}
+          </Button>
+        </div>
+        <p className="text-sm text-ink-muted" aria-live="polite">
+          {soldOut
+            ? "Esta opção está esgotada no momento."
+            : variant.stock <= LOW_STOCK
+              ? `Restam só ${variant.stock} ${variant.stock === 1 ? "unidade" : "unidades"}.`
+              : "Em estoque, pronto para envio."}
+        </p>
+      </div>
+    </div>
+  );
+}
