@@ -22,6 +22,10 @@ const svgCsp = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Phosphor is not in Next's default list; without this every icon in the package is bundled.
+    optimizePackageImports: ["@phosphor-icons/react"],
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
