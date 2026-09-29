@@ -7,9 +7,9 @@ import type { Category } from "@/lib/catalog/queries";
 export function Footer({ categories }: { categories: Category[] }) {
   return (
     <footer className="mt-auto border-t border-line bg-blush/60">
-      <div className="container-page grid gap-12 py-14 md:grid-cols-12">
-        <div className="space-y-4 md:col-span-4">
-          <Logo className="text-wine" />
+      <div className="container-page grid grid-cols-2 gap-x-6 gap-y-10 py-14 md:grid-cols-12 md:gap-12">
+        <div className="col-span-2 space-y-4 md:col-span-4">
+          <Logo className="h-9 w-auto" />
           <p className="max-w-xs text-sm leading-relaxed text-ink-muted">
             Materiais para fisioterapia dermatofuncional, escolhidos por quem usa na prática clínica.
           </p>
@@ -49,9 +49,9 @@ export function Footer({ categories }: { categories: Category[] }) {
           </ul>
         </nav>
 
-        <div className="md:col-span-3">
+        <div className="col-span-2 md:col-span-3">
           <p className="text-sm font-semibold text-ink">Formas de pagamento</p>
-          <ul className="mt-4 space-y-2.5 text-sm text-ink-muted">
+          <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2.5 text-sm text-ink-muted md:flex-col">
             <li className="flex items-center gap-2.5">
               <PixLogo size={18} className="text-wine" aria-hidden="true" /> Pix
             </li>

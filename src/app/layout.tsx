@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Syncopate } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { connection } from "next/server";
 
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
-import { getCategories, type Category } from "@/lib/catalog/queries";
+import { getCategories, getStoreSettings, type Category, type StoreSettings } from "@/lib/catalog/queries";
 import { publicEnv } from "@/lib/env/public";
 
 import "./globals.css";
@@ -14,13 +14,6 @@ import "./globals.css";
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const syncopate = Syncopate({
-  variable: "--font-syncopate",
-  subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -39,22 +32,23 @@ export const viewport: Viewport = {
   themeColor: "#fbf7f4",
 };
 
-async function loadCategories(): Promise<Category[]> {
+async function loadShell(): Promise<{ categories: Category[]; settings: StoreSettings | null }> {
   try {
-    return await getCategories();
+    const [categories, settings] = await Promise.all([getCategories(), getStoreSettings()]);
+    return { categories, settings };
   } catch {
-    // Navigation degrades to "Todos os produtos" if the catalog is briefly unavailable.
-    return [];
+    // The shell degrades to "Todos os produtos" and no promo bar if the catalog is briefly unavailable.
+    return { categories: [], settings: null };
   }
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Every page renders per request so Next.js can apply the CSP nonce from src/proxy.ts.
   await connection();
-  const categories = await loadCategories();
+  const { categories, settings } = await loadShell();
 
   return (
-    <html lang="pt-BR" className={`${manrope.variable} ${syncopate.variable} h-full antialiased`}>
+    <html lang="pt-BR" className={`${manrope.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         <CartProvider>
           <a
@@ -63,7 +57,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           >
             Pular para o conteúdo
           </a>
-          <Header categories={categories} />
+          <Header categories={categories} settings={settings} />
           <main id="conteudo" className="flex flex-1 flex-col">
             {children}
           </main>
