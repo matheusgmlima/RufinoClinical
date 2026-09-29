@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Trash, WarningCircle } from "@phosphor-icons/react";
+import { Info, Minus, Plus, Trash, WarningCircle } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,7 +14,7 @@ type Props = { onNavigate?: () => void; variant: "drawer" | "page" };
 
 export function CartContents({ onNavigate, variant }: Props) {
   const { items, setQuantity, remove } = useCart();
-  const { quote, pending, error } = useCartQuote();
+  const { quote, pending, error, adjusted } = useCartQuote();
   const page = variant === "page";
 
   if (!pending && items.length === 0) {
@@ -44,6 +44,12 @@ export function CartContents({ onNavigate, variant }: Props) {
             Não foi possível atualizar os preços. Verifique sua conexão.
           </p>
         ) : null}
+        {adjusted ? (
+          <p role="status" className="my-4 flex items-start gap-2 rounded-2xl bg-blush px-4 py-3 text-sm text-ink">
+            <Info size={18} weight="bold" className="mt-0.5 shrink-0 text-wine" aria-hidden="true" />
+            Atualizamos seu carrinho: itens esgotados saíram e as quantidades foram ajustadas ao estoque.
+          </p>
+        ) : null}
 
         <ul className="divide-y divide-line" aria-busy={pending}>
           {showSkeleton
@@ -61,6 +67,8 @@ export function CartContents({ onNavigate, variant }: Props) {
                   <Link
                     href={`/produtos/${line.productSlug}`}
                     onClick={onNavigate}
+                    aria-hidden="true"
+                    tabIndex={-1}
                     className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-blush"
                   >
                     {line.imageUrl ? (

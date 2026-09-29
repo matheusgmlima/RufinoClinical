@@ -13,7 +13,7 @@ import {
 } from "react";
 
 import { quoteCart } from "@/app/actions/cart";
-import { cartItemSchema, normalizeCart, type CartItem, type CartQuote, MAX_LINE_QUANTITY } from "@/lib/cart/schema";
+import { MAX_LINE_QUANTITY, normalizeCart, parseCartItem, type CartItem, type CartQuote } from "@/lib/cart/core";
 
 const STORAGE_KEY = "rc-cart-v1";
 const EMPTY: CartItem[] = [];
@@ -42,8 +42,8 @@ function readStorage(): CartItem[] {
     if (!Array.isArray(raw)) return EMPTY;
     // Keep every valid line and drop only the malformed ones (unknown fields such as prices are stripped).
     const valid = raw.flatMap((entry) => {
-      const parsed = cartItemSchema.safeParse(entry);
-      return parsed.success ? [parsed.data] : [];
+      const item = parseCartItem(entry);
+      return item ? [item] : [];
     });
     return normalizeCart(valid);
   } catch {
@@ -138,6 +138,7 @@ export function useCartQuote() {
   const { items, hydrated, remove, setQuantity } = useCart();
   const [quote, setQuote] = useState<CartQuote | null>(null);
   const [error, setError] = useState(false);
+  const [adjusted, setAdjusted] = useState(false);
   const [pending, startTransition] = useTransition();
   const request = useRef(0);
 
@@ -150,16 +151,21 @@ export function useCartQuote() {
         if (id !== request.current) return;
         setQuote(result);
         setError(false);
+        let changed = result.unavailable.length > 0;
         result.unavailable.forEach(remove);
         for (const line of result.lines) {
           const local = items.find((item) => item.variantId === line.variantId);
-          if (local && local.quantity !== line.quantity) setQuantity(line.variantId, line.quantity);
+          if (local && local.quantity !== line.quantity) {
+            setQuantity(line.variantId, line.quantity);
+            changed = true;
+          }
         }
+        if (changed) setAdjusted(true);
       } catch {
         if (id === request.current) setError(true);
       }
     });
   }, [items, hydrated, remove, setQuantity]);
 
-  return { quote, pending: pending || !hydrated, error };
+  return { quote, pending: pending || !hydrated, error, adjusted };
 }
