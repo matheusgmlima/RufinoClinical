@@ -105,7 +105,7 @@ type ShippingSnapshot = {
 };
 
 const PAYABLE_FIELDS =
-  "id, number, status, total_cents, payment_method, customer_name, customer_email, customer_document, shipping_address, expires_at, items:order_items(sku, product_name, variant_name, quantity, unit_price_cents)";
+  "id, number, status, total_cents, shipping_cents, payment_method, customer_name, customer_email, customer_document, shipping_address, expires_at, items:order_items(sku, product_name, variant_name, quantity, unit_price_cents)";
 
 export async function loadPayableOrder(supabase: Awaited<ReturnType<typeof createClient>>, orderId: string) {
   const { data } = await supabase.from("orders").select(PAYABLE_FIELDS).eq("id", orderId).maybeSingle();
@@ -136,6 +136,23 @@ function payerOf(order: PayableOrder, email: string) {
   };
 }
 
+/**
+ * Mercado Pago refuses items that do not add up to total_amount, and item prices cannot be negative.
+ * Products plus shipping add up only without discounts; otherwise the items are left out.
+ */
+function itemsOf(order: PayableOrder) {
+  const lines = order.items.map((item) => ({
+    title: `${item.product_name} - ${item.variant_name}`.slice(0, 150),
+    unit_price: money(item.unit_price_cents),
+    quantity: item.quantity,
+    external_code: item.sku,
+  }));
+  if (order.shipping_cents > 0)
+    lines.push({ title: "Frete", unit_price: money(order.shipping_cents), quantity: 1, external_code: "FRETE" });
+  const sum = order.items.reduce((total, item) => total + item.unit_price_cents * item.quantity, order.shipping_cents);
+  return sum === order.total_cents ? { items: lines } : {};
+}
+
 function orderBody(order: PayableOrder, payer: object, payment: object) {
   return {
     type: "online",
@@ -145,12 +162,7 @@ function orderBody(order: PayableOrder, payer: object, payment: object) {
     description: `Pedido #${order.number} - Rufino Clinical`,
     payer,
     shipment: { address: addressOf(order) },
-    items: order.items.map((item) => ({
-      title: `${item.product_name} - ${item.variant_name}`.slice(0, 150),
-      unit_price: money(item.unit_price_cents),
-      quantity: item.quantity,
-      external_code: item.sku,
-    })),
+    ...itemsOf(order),
     transactions: { payments: [{ amount: money(order.total_cents), ...payment }] },
   };
 }
