@@ -75,6 +75,17 @@ check([401, 503].includes(webhook.status), `Unsigned payment webhook is rejected
 const checkout = await get("/checkout");
 check(checkout.res.status === 307 && (checkout.res.headers.get("location") ?? "").includes("/entrar"), "Checkout redirects anonymous visitors to login");
 
+// Every admin page sends anonymous visitors to login (each page checks, not only the layout)
+const adminPages = ["/admin", "/admin/pedidos", "/admin/produtos", "/admin/produtos/novo", "/admin/categorias", "/admin/cupons", "/admin/configuracoes", "/admin/auditoria", "/admin/verificar"];
+const adminResults = await Promise.all(adminPages.map((path) => get(path)));
+const leaked = adminPages.filter((_, i) => {
+  const { res } = adminResults[i];
+  return !(res.status === 307 && (res.headers.get("location") ?? "").includes("/entrar"));
+});
+check(!leaked.length, `Admin pages redirect anonymous visitors to login${leaked.length ? ` (not: ${leaked.join(", ")})` : ""}`);
+const adminHtml = adminResults.map(({ body }) => body).join("");
+check(!/data-admin-shell/.test(adminHtml), "Admin shell never renders for anonymous visitors");
+
 // Unknown routes do not leak stack traces
 const missing = await get("/__does-not-exist__");
 check(missing.res.status === 404, "Unknown route returns 404");
