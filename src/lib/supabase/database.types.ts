@@ -669,6 +669,7 @@ export type Database = {
         Row: {
           free_shipping_threshold_cents: number | null
           id: boolean
+          interest_free_installments: number
           max_installments: number
           min_installment_cents: number
           pix_discount_percent: number
@@ -677,6 +678,7 @@ export type Database = {
         Insert: {
           free_shipping_threshold_cents?: number | null
           id?: boolean
+          interest_free_installments?: number
           max_installments?: number
           min_installment_cents?: number
           pix_discount_percent?: number
@@ -685,6 +687,7 @@ export type Database = {
         Update: {
           free_shipping_threshold_cents?: number | null
           id?: boolean
+          interest_free_installments?: number
           max_installments?: number
           min_installment_cents?: number
           pix_discount_percent?: number
