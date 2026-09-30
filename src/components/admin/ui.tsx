@@ -34,6 +34,17 @@ export function StatusBadge({ status }: { status: Enums<"order_status"> }) {
   );
 }
 
+/** Catalog visibility: live in the store or a draft only the team sees. */
+export function ActiveBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${active ? "bg-blush text-wine" : "bg-line/60 text-ink-muted"}`}
+    >
+      {active ? "Na loja" : "Rascunho"}
+    </span>
+  );
+}
+
 export function Panel({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
     <section className="rounded-3xl border border-line bg-white/70 p-5 lg:p-6">
