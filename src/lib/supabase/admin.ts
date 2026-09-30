@@ -9,7 +9,7 @@ import type { Database } from "./database.types";
 /**
  * Service client that BYPASSES Row Level Security.
  * Use only in trusted server paths that validate everything themselves
- * (payment webhooks, order creation). Never pass user input straight through.
+ * (payment recording, webhooks, order e-mails). Never pass user input straight through.
  */
 export function createAdminClient() {
   if (!serverEnv.SUPABASE_SECRET_KEY) {
