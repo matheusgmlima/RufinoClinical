@@ -733,6 +733,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_stock: {
+        Args: { p_delta: number; p_reason?: string; p_variant_id: string }
+        Returns: number
+      }
+      admin_status: { Args: never; Returns: string }
       cancel_order: { Args: { p_order_id: string }; Returns: boolean }
       create_order: {
         Args: {
