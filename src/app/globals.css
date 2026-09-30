@@ -117,3 +117,8 @@ details > summary::-webkit-details-marker {
     scroll-behavior: auto !important;
   }
 }
+
+/* The admin panel has its own navigation: store header, footer and cart step aside while it is on screen. */
+body:has([data-admin-shell]) [data-storefront] {
+  display: none;
+}

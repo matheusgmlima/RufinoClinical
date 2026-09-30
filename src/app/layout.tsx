@@ -62,12 +62,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           >
             Pular para o conteúdo
           </a>
-          <Header categories={categories} settings={settings} />
+          <div data-storefront className="contents">
+            <Header categories={categories} settings={settings} />
+          </div>
           <main id="conteudo" className="flex flex-1 flex-col">
             {children}
           </main>
-          <Footer categories={categories} />
-          <CartDrawer />
+          <div data-storefront className="contents">
+            <Footer categories={categories} />
+            <CartDrawer />
+          </div>
         </CartProvider>
       </body>
     </html>
