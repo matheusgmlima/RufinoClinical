@@ -67,6 +67,14 @@ const svg = await get("/brand/simbolo.svg");
 const svgCsp = svg.res.headers.get("content-security-policy") ?? "";
 check(svgCsp.includes("default-src 'none'") && svgCsp.includes("sandbox"), "Static SVGs served with sandboxed CSP");
 
+// The payment webhook refuses unsigned notifications (401, or 503 while not configured)
+const webhook = await fetch(`${base}/api/webhooks/mercadopago?data.id=1&type=payment`, { method: "POST", body: "{}" });
+check([401, 503].includes(webhook.status), `Unsigned payment webhook is rejected (got ${webhook.status})`);
+
+// Checkout and order pages require a session
+const checkout = await get("/checkout");
+check(checkout.res.status === 307 && (checkout.res.headers.get("location") ?? "").includes("/entrar"), "Checkout redirects anonymous visitors to login");
+
 // Unknown routes do not leak stack traces
 const missing = await get("/__does-not-exist__");
 check(missing.res.status === 404, "Unknown route returns 404");
