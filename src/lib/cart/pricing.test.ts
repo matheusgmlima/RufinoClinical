@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { priceCart, type VariantForQuote } from "./pricing";
 
-const settings = { pixDiscountPercent: 5, maxInstallments: 6, minInstallmentCents: 3000 };
+const settings = { pixDiscountPercent: 5, maxInstallments: 6, interestFreeInstallments: 3, minInstallmentCents: 3000 };
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
 function variant(n: number, overrides: Partial<VariantForQuote> = {}): VariantForQuote {
@@ -24,7 +24,7 @@ describe("priceCart", () => {
     expect(quote.lines[0].unitPriceCents).toBe(4990);
     expect(quote.subtotalCents).toBe(9980);
     expect(quote.pixTotalCents).toBe(9481);
-    expect(quote.installments).toEqual({ count: 3, amountCents: 3327 });
+    expect(quote.cardOffer?.replace(/\s/g, " ")).toBe("3x de R$ 33,27 sem juros");
   });
 
   it("clamps quantity to available stock", () => {

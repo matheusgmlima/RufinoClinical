@@ -26,7 +26,8 @@ export type CartQuote = {
   subtotalCents: number;
   pixTotalCents: number;
   pixDiscountPercent: number;
-  installments: { count: number; amountCents: number };
+  /** Card installments for the subtotal (see cardOffer). */
+  cardOffer: string | null;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

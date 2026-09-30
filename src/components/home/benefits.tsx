@@ -1,11 +1,13 @@
 import { CreditCard, PixLogo, ShieldCheck, Truck } from "@phosphor-icons/react/ssr";
 
 import type { StoreSettings } from "@/lib/catalog/queries";
+import { cardClaim } from "@/lib/money";
 
 export function Benefits({ settings }: { settings: StoreSettings }) {
+  const card = cardClaim(settings) ?? "cartão de crédito";
   const items = [
     { icon: PixLogo, title: `${settings.pixDiscountPercent}% off no Pix`, text: "Desconto aplicado no pagamento." },
-    { icon: CreditCard, title: `Até ${settings.maxInstallments}x sem juros`, text: "No cartão de crédito." },
+    { icon: CreditCard, title: card[0].toUpperCase() + card.slice(1), text: "No cartão de crédito." },
     { icon: Truck, title: "Envio para todo o Brasil", text: "Frete calculado pelo CEP." },
     { icon: ShieldCheck, title: "Compra segura", text: "Dados protegidos e criptografados." },
   ];

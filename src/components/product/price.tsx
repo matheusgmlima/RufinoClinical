@@ -1,5 +1,5 @@
 import type { StoreSettings } from "@/lib/catalog/queries";
-import { formatBRL, installmentPlan, pixPriceCents } from "@/lib/money";
+import { cardOffer, formatBRL, pixPriceCents } from "@/lib/money";
 
 type Props = {
   priceCents: number;
@@ -11,7 +11,7 @@ type Props = {
 
 export function Price({ priceCents, compareAtPriceCents, settings, size = "sm", prefix }: Props) {
   const pix = pixPriceCents(priceCents, settings.pixDiscountPercent);
-  const plan = installmentPlan(priceCents, settings.maxInstallments, settings.minInstallmentCents);
+  const offer = cardOffer(priceCents, settings);
   const large = size === "lg";
 
   return (
@@ -25,11 +25,7 @@ export function Price({ priceCents, compareAtPriceCents, settings, size = "sm", 
           {formatBRL(priceCents)}
         </span>
       </p>
-      {plan.count > 1 ? (
-        <p className={`text-ink-muted ${large ? "text-sm" : "text-xs"}`}>
-          ou {plan.count}x de {formatBRL(plan.amountCents)} sem juros
-        </p>
-      ) : null}
+      {offer ? <p className={`text-ink-muted ${large ? "text-sm" : "text-xs"}`}>ou {offer}</p> : null}
       {settings.pixDiscountPercent > 0 ? (
         <p className={`font-semibold text-wine tabular-nums ${large ? "text-base" : "text-xs"}`}>
           {formatBRL(pix)} no Pix

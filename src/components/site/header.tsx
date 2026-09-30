@@ -5,17 +5,19 @@ import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { CartButton } from "@/components/cart/cart-drawer";
 import type { Category, StoreSettings } from "@/lib/catalog/queries";
+import { cardClaim } from "@/lib/money";
 
 import { MobileMenu } from "./mobile-menu";
 import { NavLinks } from "./nav-links";
 
 export function Header({ categories, settings }: { categories: Category[]; settings: StoreSettings | null }) {
+  const card = settings && cardClaim(settings);
   return (
     <>
       {settings ? (
         <aside aria-label="Condições de pagamento" className="bg-wine text-cream">
           <p className="container-page flex h-9 items-center justify-center text-center text-xs font-medium tracking-wide">
-            {settings.pixDiscountPercent}% off no Pix e até {settings.maxInstallments}x sem juros
+            {settings.pixDiscountPercent}% off no Pix{card ? ` e ${card}` : ""}
           </p>
         </aside>
       ) : null}

@@ -2,11 +2,18 @@ import { Plus } from "@phosphor-icons/react/ssr";
 
 import type { StoreSettings } from "@/lib/catalog/queries";
 
+// "Sem juros" only up to the installments whose interest the store pays (see CardTerms).
+function cardTerms({ maxInstallments: max, interestFreeInstallments: free }: StoreSettings) {
+  if (max <= 1) return "cartão de crédito";
+  if (free <= 1) return `cartão de crédito em até ${max}x`;
+  return `cartão de crédito em até ${max}x${free < max ? ` (até ${free}x sem juros)` : " sem juros"}`;
+}
+
 export function Faq({ settings }: { settings: StoreSettings }) {
   const items = [
     {
       q: "Quais formas de pagamento vocês aceitam?",
-      a: `Pix com ${settings.pixDiscountPercent}% de desconto, cartão de crédito em até ${settings.maxInstallments}x sem juros e boleto.`,
+      a: `Pix com ${settings.pixDiscountPercent}% de desconto, ${cardTerms(settings)} e boleto.`,
     },
     {
       q: "Qual é o prazo de entrega?",

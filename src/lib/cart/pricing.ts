@@ -1,4 +1,4 @@
-import { installmentPlan, pixPriceCents } from "@/lib/money";
+import { cardOffer, pixPriceCents, type CardTerms } from "@/lib/money";
 
 import { MAX_LINE_QUANTITY, type CartItem, type CartQuote, type QuoteLine } from "./core";
 
@@ -13,7 +13,7 @@ export type VariantForQuote = {
   product: { slug: string; name: string; active: boolean; imageUrl: string | null } | null;
 };
 
-export type PricingSettings = { pixDiscountPercent: number; maxInstallments: number; minInstallmentCents: number };
+export type PricingSettings = CardTerms & { pixDiscountPercent: number };
 
 /**
  * Prices cart lines strictly from database rows. Items that are missing, inactive or sold out
@@ -53,9 +53,6 @@ export function priceCart(items: CartItem[], variants: VariantForQuote[], settin
     subtotalCents,
     pixTotalCents: pixPriceCents(subtotalCents, settings.pixDiscountPercent),
     pixDiscountPercent: settings.pixDiscountPercent,
-    installments:
-      subtotalCents > 0
-        ? installmentPlan(subtotalCents, settings.maxInstallments, settings.minInstallmentCents)
-        : { count: 1, amountCents: 0 },
+    cardOffer: subtotalCents > 0 ? cardOffer(subtotalCents, settings) : null,
   };
 }

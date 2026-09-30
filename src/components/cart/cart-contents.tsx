@@ -138,10 +138,9 @@ export function CartContents({ onNavigate, variant }: Props) {
               {quote ? formatBRL(quote.pixTotalCents) : "..."}
             </dd>
           </div>
-          {quote && quote.installments.count > 1 ? (
+          {quote?.cardOffer ? (
             <p className="text-right text-xs text-ink-muted">
-              ou {formatBRL(quote.subtotalCents)} em até {quote.installments.count}x de{" "}
-              {formatBRL(quote.installments.amountCents)} sem juros
+              ou {formatBRL(quote.subtotalCents)} em {quote.cardOffer}
             </p>
           ) : null}
         </dl>
