@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { PrivacyPanel } from "@/components/account/privacy-panel";
 import { ProfileForm } from "@/components/account/profile-form";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,7 @@ export default async function ProfilePage() {
         email={user.email}
         profile={profile ?? { full_name: null, phone: null, document: null, marketing_opt_in: false }}
       />
+      <PrivacyPanel />
     </div>
   );
 }

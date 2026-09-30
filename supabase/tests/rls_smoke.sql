@@ -7,7 +7,8 @@ begin;
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at) values
   ('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cliente@teste.local', '{}', '{"full_name":"Cliente Teste"}', now(), now()),
   ('33333333-3333-3333-3333-333333333333', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'outro@teste.local', '{}', '{}', now(), now()),
-  ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@teste.local', '{}', '{}', now(), now());
+  ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@teste.local', '{}', '{}', now(), now()),
+  ('44444444-4444-4444-4444-444444444444', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'sair@teste.local', '{}', '{}', now(), now());
 insert into private.admin_users (user_id, note) values ('22222222-2222-2222-2222-222222222222', 'smoke test');
 
 insert into public.categories (id, slug, name) values ('00000000-0000-0000-0000-00000000c001', 'teste', 'Teste');
@@ -67,6 +68,7 @@ select pg_temp.try('anon: read shipping rates', 'allowed rows=5', 'select * from
 select pg_temp.try('anon: quote order', 'blocked', $q$select public.quote_order('[]', null, 'pix')$q$);
 select pg_temp.try('anon: create order', 'blocked', $q$select public.create_order('[]', null, 'pix')$q$);
 select pg_temp.try('anon: admin status', 'blocked', 'select public.admin_status()');
+select pg_temp.try('anon: delete account', 'blocked', 'select public.delete_my_account()');
 reset role;
 
 -- Customer ------------------------------------------------------------------------
@@ -89,6 +91,7 @@ select pg_temp.try('customer: read audit log', 'allowed rows=0', 'select * from 
 select pg_temp.try('customer: update settings', 'allowed rows=0', 'update public.store_settings set pix_discount_percent = 30');
 select pg_temp.val('customer: admin status', 'none', 'select public.admin_status()');
 select pg_temp.try('customer: adjust stock', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', 5)$q$);
+select pg_temp.try('customer: delete account with open orders', 'blocked', 'select public.delete_my_account()');
 reset role;
 
 set local role authenticated;
@@ -145,6 +148,8 @@ select pg_temp.try('admin: change settings row key', 'blocked', 'update public.s
 select pg_temp.try('admin: backdate settings', 'blocked', $q$update public.store_settings set updated_at = now() - interval '1 year'$q$);
 select pg_temp.try('admin: create coupon', 'allowed rows=1', $q$insert into public.coupons (code, discount_type, discount_value, ends_at) values ('PAINEL5', 'fixed', 500, now() + interval '1 day')$q$);
 select pg_temp.try('admin: coupon with preset usage', 'blocked', $q$insert into public.coupons (code, discount_type, discount_value, redemptions_count) values ('PAINEL6', 'fixed', 500, 3)$q$);
+select pg_temp.try('admin: delete own account', 'blocked', 'select public.delete_my_account()');
+select pg_temp.try('admin: add internal note', 'allowed rows=1', $q$insert into public.order_notes (order_id, notes) values ('00000000-0000-0000-0000-0000000000d1', 'Nota interna')$q$);
 reset role;
 
 -- Payment integration (service role) ---------------------------------------------------
@@ -164,6 +169,13 @@ select pg_temp.try('admin: ship without tracking', 'blocked', $q$update public.o
 select pg_temp.try('admin: ship with tracking', 'allowed rows=1', $q$update public.orders set status = 'shipped', shipping_tracking_code = 'BR123456789BR' where id = '00000000-0000-0000-0000-0000000000d1'$q$);
 select pg_temp.try('admin: cancel shipped order', 'blocked', $q$update public.orders set status = 'canceled' where id = '00000000-0000-0000-0000-0000000000d1'$q$);
 reset role;
+
+-- Account deletion (LGPD): the user and personal data go, nothing else ---------------------
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}';
+select pg_temp.try('customer without orders: delete account', 'allowed rows=1', 'select public.delete_my_account()');
+reset role;
+select pg_temp.val('deleted account leaves no user or profile', '0', $q$select (select count(*) from auth.users where id = '44444444-4444-4444-4444-444444444444') + (select count(*) from public.profiles where id = '44444444-4444-4444-4444-444444444444') || ''$q$);
 
 -- Access revoked immediately when removed from the allow-list -------------------------------
 delete from private.admin_users where user_id = '22222222-2222-2222-2222-222222222222';
@@ -237,6 +249,8 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
 select pg_temp.val('customer: reads own payments', '4', 'select count(*)::text from public.payments');
 select pg_temp.try('customer: edit own payment', 'blocked', $q$update public.payments set status = 'approved'$q$);
+select pg_temp.val('customer: reads internal notes of own order', '0', 'select count(*)::text from public.order_notes');
+select pg_temp.try('customer: add note to own order', 'blocked', $q$insert into public.order_notes (order_id, notes) values ('00000000-0000-0000-0000-0000000000d1', 'x')$q$);
 set local request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
 select pg_temp.val('other customer: reads payments of customer 1', '0', 'select count(*)::text from public.payments');
 reset role;

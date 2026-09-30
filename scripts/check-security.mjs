@@ -75,6 +75,13 @@ check([401, 503].includes(webhook.status), `Unsigned payment webhook is rejected
 const checkout = await get("/checkout");
 check(checkout.res.status === 307 && (checkout.res.headers.get("location") ?? "").includes("/entrar"), "Checkout redirects anonymous visitors to login");
 
+// The personal data export needs a session
+const exportData = await get("/conta/exportar");
+check(
+  exportData.res.status === 303 && (exportData.res.headers.get("location") ?? "").includes("/entrar"),
+  "Personal data export redirects anonymous visitors to login",
+);
+
 // Every admin page sends anonymous visitors to login (each page checks, not only the layout)
 const adminPages = ["/admin", "/admin/pedidos", "/admin/produtos", "/admin/produtos/novo", "/admin/categorias", "/admin/cupons", "/admin/configuracoes", "/admin/auditoria", "/admin/verificar"];
 const adminResults = await Promise.all(adminPages.map((path) => get(path)));
