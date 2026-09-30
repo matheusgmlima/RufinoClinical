@@ -12,6 +12,12 @@ const schema = z.object({
   MP_WEBHOOK_SECRET: optional(z.string().min(16)),
   // "true" only with test credentials: sends Mercado Pago's sandbox buyer instead of the real one.
   MP_TEST_MODE: optional(z.enum(["true", "false"])),
+  // Resend (order e-mails). Sending needs a verified domain in Resend; unset, e-mails are skipped.
+  RESEND_API_KEY: optional(z.string().regex(/^re_\w+$/)),
+  // Sender with the verified domain, e.g. "Rufino Clinical <pedidos@dominio.com.br>".
+  EMAIL_FROM: optional(z.string().regex(/^(.+ <[^\s@<>]+@[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+)$/)),
+  // Where customer replies go (the store's contact inbox).
+  EMAIL_REPLY_TO: optional(z.email()),
 });
 
 export const serverEnv = schema.parse({
@@ -19,4 +25,7 @@ export const serverEnv = schema.parse({
   MP_ACCESS_TOKEN: process.env.MP_ACCESS_TOKEN,
   MP_WEBHOOK_SECRET: process.env.MP_WEBHOOK_SECRET,
   MP_TEST_MODE: process.env.MP_TEST_MODE,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  EMAIL_FROM: process.env.EMAIL_FROM,
+  EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO,
 });

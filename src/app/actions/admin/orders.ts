@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { adminClient } from "@/lib/auth/admin";
+import { notifyOrder } from "@/lib/email/notify";
 import { getSessionUser } from "@/lib/auth/session";
 import {
   getMpOrder,
@@ -55,6 +56,7 @@ export async function advanceOrder(id: string, input: unknown): Promise<ActionRe
   if (error || !data?.length)
     return { error: "Não foi possível mudar o status. Atualize a página e confira o pedido." };
   if (change.to === "canceled") await voidOpenCharges(supabase, id);
+  if (change.to === "shipped") notifyOrder("shipped", id);
   refresh(id);
   return {};
 }

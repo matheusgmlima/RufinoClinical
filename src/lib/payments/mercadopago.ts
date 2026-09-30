@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 
+import { notifyOrder } from "@/lib/email/notify";
 import { publicEnv } from "@/lib/env/public";
 import { serverEnv } from "@/lib/env/server";
 import { isPayable } from "@/lib/orders/status";
@@ -88,6 +89,9 @@ export async function recordPayment(order: MpOrder): Promise<string> {
     console.warn("refunding a charge the order could not take", order.id);
     await refundMpOrder(order.id);
   }
+  const waiting = data === "recorded" && args.p_status === "pending" && (args.p_method === "pix" || args.p_method === "boleto");
+  const email = data === "paid" ? "paid" : data === "refunded" ? "refunded" : waiting ? "received" : null;
+  if (email) notifyOrder(email, args.p_order_id);
   return data;
 }
 
