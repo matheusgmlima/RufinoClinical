@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import type { createClient } from "@/lib/supabase/server";
 
-import { isoDuration, mpOrderSchema, splitName, toPaymentRecord, type MpOrder } from "./gateway";
+import { isoDuration, money, mpOrderSchema, orderItems, splitName, toPaymentRecord, type MpOrder } from "./gateway";
 
 // Mercado Pago Checkout Transparente through the Orders API (/v1/orders): one order per charge attempt.
 const API = "https://api.mercadopago.com";
@@ -85,6 +85,7 @@ export async function recordPayment(order: MpOrder): Promise<string> {
   const { data, error } = await createAdminClient().rpc("record_payment", args as Args);
   if (error) throw new Error(`record_payment failed: ${error.message}`);
   if (data === "needs_refund") {
+    console.warn("refunding a charge the order could not take", order.id);
     await mp(`/v1/orders/${order.id}/refund`, { body: {}, idempotencyKey: randomUUID() }).catch((err) => {
       if (!(err instanceof MpError && err.status === 409)) throw err; // 409: already refunded or in progress
     });
@@ -135,8 +136,6 @@ export async function loadPayableOrder(supabase: Awaited<ReturnType<typeof creat
 }
 type PayableOrder = NonNullable<Awaited<ReturnType<typeof loadPayableOrder>>>;
 
-const money = (cents: number) => (cents / 100).toFixed(2);
-
 function addressOf(order: PayableOrder) {
   const a = order.shipping_address as ShippingSnapshot;
   return {
@@ -158,23 +157,6 @@ function payerOf(order: PayableOrder, email: string) {
   };
 }
 
-/**
- * Mercado Pago refuses items that do not add up to total_amount, and item prices cannot be negative.
- * Products plus shipping add up only without discounts; otherwise the items are left out.
- */
-function itemsOf(order: PayableOrder) {
-  const lines = order.items.map((item) => ({
-    title: `${item.product_name} - ${item.variant_name}`.slice(0, 150),
-    unit_price: money(item.unit_price_cents),
-    quantity: item.quantity,
-    external_code: item.sku,
-  }));
-  if (order.shipping_cents > 0)
-    lines.push({ title: "Frete", unit_price: money(order.shipping_cents), quantity: 1, external_code: "FRETE" });
-  const sum = order.items.reduce((total, item) => total + item.unit_price_cents * item.quantity, order.shipping_cents);
-  return sum === order.total_cents ? { items: lines } : {};
-}
-
 function orderBody(order: PayableOrder, payer: object, payment: object) {
   return {
     type: "online",
@@ -184,7 +166,7 @@ function orderBody(order: PayableOrder, payer: object, payment: object) {
     description: `Pedido #${order.number} - Rufino Clinical`,
     payer,
     shipment: { address: addressOf(order) },
-    ...itemsOf(order),
+    ...orderItems(order),
     transactions: { payments: [{ amount: money(order.total_cents), ...payment }] },
   };
 }

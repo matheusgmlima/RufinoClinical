@@ -146,6 +146,34 @@ export function isoDuration(ms: number): string {
   return `P${days ? `${days}D` : ""}T${Math.floor((minutes % 1440) / 60)}H${minutes % 60}M`;
 }
 
+/** Cents as the decimal string the Orders API expects. */
+export const money = (cents: number) => (cents / 100).toFixed(2);
+
+type ItemSource = {
+  total_cents: number;
+  shipping_cents: number;
+  items: { sku: string; product_name: string; variant_name: string; quantity: number; unit_price_cents: number }[];
+};
+
+/**
+ * The order's items for Mercado Pago, which refuses items that do not add up to total_amount and
+ * negative prices. Products plus shipping add up only without discounts; otherwise none are sent.
+ */
+export function orderItems(order: ItemSource) {
+  const sum = order.items.reduce((total, item) => total + item.unit_price_cents * item.quantity, order.shipping_cents);
+  if (sum !== order.total_cents) return {};
+  const lines = order.items.map((item) => ({
+    title: `${item.product_name} - ${item.variant_name}`.slice(0, 150),
+    unit_price: money(item.unit_price_cents),
+    quantity: item.quantity,
+    external_code: item.sku,
+  }));
+  if (order.shipping_cents > 0) {
+    lines.push({ title: "Frete", unit_price: money(order.shipping_cents), quantity: 1, external_code: "FRETE" });
+  }
+  return { items: lines };
+}
+
 export function splitName(fullName: string) {
   const [first = "", ...rest] = fullName.trim().split(/\s+/);
   return { first_name: first, last_name: rest.join(" ") || first };
