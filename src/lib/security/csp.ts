@@ -15,6 +15,8 @@ const MP_CONNECT = [
 ];
 const MP_FRAMES = ["https://secure-fields.mercadopago.com", "https://api-static.mercadopago.com"];
 const MP_ASSETS = "https://http2.mlstatic.com";
+// Device fingerprint the SDK sends to Mercado Pago's anti-fraud (blocking it lowers card approval).
+const MP_DEVICE = ["https://www.mercadolibre.com", "https://www.mercadolivre.com"];
 
 /**
  * Strict, nonce-based Content Security Policy.
@@ -31,9 +33,9 @@ export function buildCsp({ nonce, isDev, supabaseUrl }: CspOptions): string {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(isDev ? ["'unsafe-eval'"] : [])],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "blob:", "data:", supabaseHttp, MP_ASSETS],
+    "img-src": ["'self'", "blob:", "data:", supabaseHttp, MP_ASSETS, ...MP_DEVICE],
     "font-src": ["'self'"],
-    "connect-src": ["'self'", supabaseHttp, supabaseWs, ...MP_CONNECT, MP_ASSETS],
+    "connect-src": ["'self'", supabaseHttp, supabaseWs, ...MP_CONNECT, MP_ASSETS, ...MP_DEVICE],
     "frame-src": ["'self'", ...MP_FRAMES],
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],

@@ -42,6 +42,7 @@ describe("buildCsp", () => {
       "frame-src 'self' https://secure-fields.mercadopago.com https://api-static.mercadopago.com",
     );
     expect(directive(csp, "connect-src")).toContain("https://api.mercadopago.com");
+    expect(directive(csp, "connect-src")).toContain("https://www.mercadolivre.com"); // anti-fraud device id
     expect(directive(csp, "script-src")).not.toContain("https:");
   });
 
