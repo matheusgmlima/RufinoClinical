@@ -26,7 +26,7 @@ export default async function AdminHomePage() {
     supabase.from("orders").select("total_cents").in("status", SOLD).gte("paid_at", startOfMonthInSaoPaulo()),
     supabase
       .from("orders")
-      .select("id, number, status, customer_name, total_cents, created_at")
+      .select("id, number, status, shipping_method, customer_name, total_cents, created_at")
       .order("created_at", { ascending: false })
       .limit(8),
     supabase
@@ -113,7 +113,7 @@ export default async function AdminHomePage() {
                       </span>
                       <span className="flex items-center gap-3">
                         <span className="tabular-nums">{formatBRL(order.total_cents)}</span>
-                        <StatusBadge status={order.status} />
+                        <StatusBadge status={order.status} method={order.shipping_method} />
                       </span>
                     </Link>
                   </li>

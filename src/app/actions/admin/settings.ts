@@ -6,7 +6,9 @@ import { z } from "zod";
 import { adminClient } from "@/lib/auth/admin";
 import { fieldErrors, type FormState } from "@/lib/forms";
 import { parseBRL } from "@/lib/money";
+import { cepHasLocation, ensureCepLocation } from "@/lib/shipping/cep-location";
 import { REGIONS, type Region } from "@/lib/shipping/regions";
+import { onlyDigits } from "@/lib/validation/br";
 
 const DENIED: FormState = { status: "error", message: "Acesso negado. Entre de novo no painel." };
 
@@ -125,4 +127,80 @@ export async function saveShippingRates(_prev: FormState, formData: FormData): P
   }
   revalidatePath("/admin/configuracoes");
   return { status: "ok", message: "Frete salvo. Já vale para os próximos pedidos." };
+}
+
+const optionalText = (max: number, message: string) =>
+  z
+    .string()
+    .trim()
+    .max(max, message)
+    .transform((value) => value || null);
+
+const deliverySchema = z.object({
+  origin_zip: z
+    .string()
+    .transform(onlyDigits)
+    .refine((value) => value === "" || value.length === 8, "CEP inválido.")
+    .transform((value) => value || null),
+  local_delivery_enabled: z.boolean(),
+  local_delivery_radius_km: z
+    .string()
+    .trim()
+    .transform((value) => Number(value.replace(",", ".")))
+    .refine((value) => Number.isFinite(value) && value >= 1 && value <= 60, "Use de 1 a 60 km.")
+    .transform((value) => Math.round(value * 10) / 10),
+  local_delivery_price_cents: z.string().transform((value, ctx) => {
+    // Zero is valid: free local delivery.
+    const parsed = value.trim() === "0" || value.trim() === "0,00" ? 0 : parseBRL(value);
+    if (parsed === null || parsed > 100000) {
+      ctx.issues.push({ code: "custom", message: "Valor inválido. Exemplo: 15,00.", input: value });
+      return z.NEVER;
+    }
+    return parsed;
+  }),
+  local_delivery_cutoff: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário inválido. Exemplo: 16:00."),
+  pickup_enabled: z.boolean(),
+  pickup_address: optionalText(300, "Máximo de 300 caracteres."),
+  pickup_hours: optionalText(200, "Máximo de 200 caracteres."),
+});
+
+/** Same-day courier around the stock and free pickup. The database checks distance and state. */
+export async function saveDelivery(_prev: FormState, formData: FormData): Promise<FormState> {
+  const supabase = await adminClient();
+  if (!supabase) return DENIED;
+  const text = (name: string) => String(formData.get(name) ?? "");
+  const parsed = deliverySchema.safeParse({
+    origin_zip: text("origin_zip"),
+    local_delivery_enabled: formData.get("local_delivery_enabled") === "on",
+    local_delivery_radius_km: text("local_delivery_radius_km"),
+    local_delivery_price_cents: text("local_delivery_price"),
+    local_delivery_cutoff: text("local_delivery_cutoff"),
+    pickup_enabled: formData.get("pickup_enabled") === "on",
+    pickup_address: text("pickup_address"),
+    pickup_hours: text("pickup_hours"),
+  });
+  if (!parsed.success) {
+    const errors = fieldErrors(parsed.error);
+    errors.local_delivery_price ??= errors.local_delivery_price_cents;
+    return { status: "error", fieldErrors: errors };
+  }
+
+  const values = parsed.data;
+  const errors: Record<string, string> = {};
+  if ((values.local_delivery_enabled || values.pickup_enabled) && !values.origin_zip) {
+    errors.origin_zip = "Informe o CEP do estoque.";
+  } else if (values.origin_zip) {
+    // The distance to each customer is measured from this CEP, so it must have a location.
+    const known = values.local_delivery_enabled
+      ? await cepHasLocation(values.origin_zip)
+      : await ensureCepLocation(values.origin_zip);
+    if (!known) errors.origin_zip = "Não encontramos a localização desse CEP. Confira o número ou tente outro próximo.";
+  }
+  if (values.pickup_enabled && !values.pickup_address) errors.pickup_address = "Informe o endereço de retirada.";
+  if (Object.keys(errors).length) return { status: "error", fieldErrors: errors };
+
+  const { data, error } = await supabase.from("store_settings").update(values).eq("id", true).select("id");
+  if (error || !data?.length) return { status: "error", message: "Não foi possível salvar a entrega local." };
+  revalidatePath("/admin/configuracoes");
+  return { status: "ok", message: "Entrega local e retirada salvas. Já valem para os próximos pedidos." };
 }

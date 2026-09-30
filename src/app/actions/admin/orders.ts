@@ -27,7 +27,8 @@ const tracking = z
   .regex(/^[A-Z0-9-]{5,40}$/, "Código de rastreio inválido.");
 const step = z.discriminatedUnion("to", [
   z.object({ to: z.literal("preparing") }),
-  z.object({ to: z.literal("shipped"), tracking }),
+  // Local courier and pickup orders have no tracking code (the database requires one for carriers).
+  z.object({ to: z.literal("shipped"), tracking: z.union([z.literal(""), tracking]).optional() }),
   z.object({ to: z.literal("delivered") }),
   z.object({ to: z.literal("canceled") }),
 ]);
@@ -51,7 +52,9 @@ export async function advanceOrder(id: string, input: unknown): Promise<ActionRe
 
   const change = parsed.data;
   const values =
-    change.to === "shipped" ? { status: change.to, shipping_tracking_code: change.tracking } : { status: change.to };
+    change.to === "shipped" && change.tracking
+      ? { status: change.to, shipping_tracking_code: change.tracking }
+      : { status: change.to };
   const { data, error } = await supabase.from("orders").update(values).eq("id", id).select("id");
   if (error || !data?.length)
     return { error: "Não foi possível mudar o status. Atualize a página e confira o pedido." };

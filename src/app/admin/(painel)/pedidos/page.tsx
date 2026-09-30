@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { formatDateTime } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL } from "@/lib/orders/status";
+import { SHIPPING_METHOD_SHORT } from "@/lib/shipping/options";
 import type { Enums } from "@/lib/supabase/database.types";
 
 export const metadata: Metadata = { title: "Pedidos" };
@@ -45,7 +46,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
   let query = supabase
     .from("orders")
-    .select("id, number, status, customer_name, customer_email, total_cents, payment_method, created_at", {
+    .select("id, number, status, customer_name, customer_email, total_cents, payment_method, shipping_method, created_at", {
       count: "exact",
     })
     .order("created_at", { ascending: false })
@@ -112,10 +113,15 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                     {formatDateTime(order.created_at)} · {order.customer_email}
                     {order.payment_method ? ` · ${PAYMENT_METHOD_LABEL[order.payment_method]}` : ""}
                   </span>
+                  {order.shipping_method !== "standard" ? (
+                    <span className="mt-1 inline-flex rounded-full bg-mist px-2 py-0.5 text-xs font-semibold text-mist-ink">
+                      {SHIPPING_METHOD_SHORT[order.shipping_method]}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="tabular-nums">{formatBRL(order.total_cents)}</span>
-                  <StatusBadge status={order.status} />
+                  <StatusBadge status={order.status} method={order.shipping_method} />
                 </span>
               </Link>
             </li>

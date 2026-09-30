@@ -10,6 +10,7 @@ import type { Enums } from "@/lib/supabase/database.types";
 type Props = {
   orderId: string;
   status: Enums<"order_status">;
+  shippingMethod: Enums<"shipping_method">;
   notes: string | null;
   refundable: boolean;
   total: string;
@@ -18,7 +19,7 @@ type Props = {
 const OFFLINE: ActionResult = { error: "Sem conexão com a loja. Confira a internet e tente de novo." };
 
 /** Next fulfilment step, cancel (unpaid only), refund (paid) and internal notes for one order. */
-export function OrderActions({ orderId, status, notes, refundable, total }: Props) {
+export function OrderActions({ orderId, status, shippingMethod, notes, refundable, total }: Props) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult>({});
   const [confirming, setConfirming] = useState<"cancel" | "refund" | null>(null);
@@ -53,7 +54,12 @@ export function OrderActions({ orderId, status, notes, refundable, total }: Prop
           Iniciar separação
         </Button>
       ) : null}
-      {status === "preparing" ? (
+      {status === "preparing" && shippingMethod !== "standard" ? (
+        <Button onClick={() => run(() => advanceOrder(orderId, { to: "shipped" }))} disabled={pending}>
+          {shippingMethod === "local" ? "Saiu para entrega" : "Pronto para retirada"}
+        </Button>
+      ) : null}
+      {status === "preparing" && shippingMethod === "standard" ? (
         <form onSubmit={ship} className="grid gap-3">
           <Field id="tracking" label="Código de rastreio">
             <Input id="tracking" required maxLength={40} autoComplete="off" className="uppercase" />
@@ -65,7 +71,7 @@ export function OrderActions({ orderId, status, notes, refundable, total }: Prop
       ) : null}
       {status === "shipped" ? (
         <Button onClick={() => run(() => advanceOrder(orderId, { to: "delivered" }))} disabled={pending}>
-          Marcar como entregue
+          {shippingMethod === "pickup" ? "Marcar como retirado" : "Marcar como entregue"}
         </Button>
       ) : null}
 

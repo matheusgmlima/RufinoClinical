@@ -1,6 +1,7 @@
 import { formatDateTime } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL } from "@/lib/orders/status";
+import { SHIPPING_METHOD_LABEL } from "@/lib/shipping/options";
 import { REGION_LABEL } from "@/lib/shipping/regions";
 
 // Turns audit_log rows (full old/new row snapshots written by private.audit_row) into what changed,
@@ -59,6 +60,15 @@ const FIELD: Record<string, string> = {
   interest_free_installments: "Parcelas sem juros",
   min_installment_cents: "Parcela mínima",
   free_shipping_threshold_cents: "Frete grátis a partir de",
+  origin_zip: "CEP do estoque",
+  local_delivery_enabled: "Entrega no mesmo dia",
+  local_delivery_radius_km: "Raio da entrega (km)",
+  local_delivery_price_cents: "Preço da entrega local",
+  local_delivery_cutoff: "Entrega local: pago até",
+  pickup_enabled: "Retirada na loja",
+  pickup_address: "Endereço de retirada",
+  pickup_hours: "Horário de retirada",
+  shipping_method: "Entrega",
   min_days: "Prazo mínimo",
   max_days: "Prazo máximo",
   shipping_tracking_code: "Rastreio",
@@ -86,6 +96,7 @@ const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 const ENUM_LABEL: Record<string, Record<string, string>> = {
   status: ORDER_STATUS_LABEL,
   payment_method: PAYMENT_METHOD_LABEL,
+  shipping_method: SHIPPING_METHOD_LABEL,
   discount_type: { percent: "Porcentagem", fixed: "Valor fixo" },
 };
 

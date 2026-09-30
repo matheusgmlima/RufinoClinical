@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from "@/lib/orders/status";
+import { ORDER_STATUS_TONE, orderStatusLabel } from "@/lib/orders/status";
 import type { Enums } from "@/lib/supabase/database.types";
 
 export function AdminHeader({ title, lead, action }: { title: string; lead?: string; action?: ReactNode }) {
@@ -15,10 +15,10 @@ export function AdminHeader({ title, lead, action }: { title: string; lead?: str
   );
 }
 
-export function StatusBadge({ status }: { status: Enums<"order_status"> }) {
+export function StatusBadge({ status, method }: { status: Enums<"order_status">; method?: Enums<"shipping_method"> }) {
   return (
     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_TONE[status]}`}>
-      {ORDER_STATUS_LABEL[status]}
+      {orderStatusLabel(status, method)}
     </span>
   );
 }

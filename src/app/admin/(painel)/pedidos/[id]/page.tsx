@@ -9,13 +9,14 @@ import { OrderSummary } from "@/components/checkout/order-summary";
 import { requireAdmin } from "@/lib/auth/admin";
 import { formatDateTime } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
-import { PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/lib/orders/status";
+import { orderStatusLabel, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/lib/orders/status";
+import { SHIPPING_METHOD_LABEL } from "@/lib/shipping/options";
 import { formatCep, formatDocument, formatPhone } from "@/lib/validation/br";
 
 export const metadata: Metadata = { title: "Pedido" };
 
 const ORDER_FIELDS = `id, number, status, customer_name, customer_email, customer_phone, customer_document,
-  shipping_address, shipping_tracking_code, subtotal_cents, discount_cents, payment_discount_cents, shipping_cents,
+  shipping_address, shipping_method, shipping_tracking_code, subtotal_cents, discount_cents, payment_discount_cents, shipping_cents,
   total_cents, payment_method, installments, coupon_code, gateway_payment_id, created_at, paid_at, shipped_at,
   delivered_at, canceled_at,
   items:order_items(product_name, variant_name, sku, quantity, unit_price_cents, total_cents),
@@ -54,8 +55,8 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
   const timeline = [
     ["Pedido feito", order.created_at],
     ["Pagamento aprovado", order.paid_at],
-    ["Enviado", order.shipped_at],
-    ["Entregue", order.delivered_at],
+    [orderStatusLabel("shipped", order.shipping_method), order.shipped_at],
+    [orderStatusLabel("delivered", order.shipping_method), order.delivered_at],
     ["Cancelado", order.canceled_at],
   ].filter((entry): entry is [string, string] => !!entry[1]);
 
@@ -67,7 +68,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
       <AdminHeader
         title={`Pedido #${order.number}`}
         lead={`${formatDateTime(order.created_at)}${order.payment_method ? ` · ${PAYMENT_METHOD_LABEL[order.payment_method]}` : ""}${order.installments && order.installments > 1 ? ` em ${order.installments}x` : ""}`}
-        action={<StatusBadge status={order.status} />}
+        action={<StatusBadge status={order.status} method={order.shipping_method} />}
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -119,6 +120,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
             <OrderActions
               orderId={order.id}
               status={order.status}
+              shippingMethod={order.shipping_method}
               notes={order.note?.notes ?? null}
               refundable={refundable}
               total={formatBRL(order.total_cents)}
@@ -144,8 +146,13 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
 
           <Panel title="Entrega">
             <dl className="grid gap-3 text-sm">
+              <Detail label="Forma">
+                <span className={order.shipping_method === "standard" ? "" : "font-semibold text-wine"}>
+                  {SHIPPING_METHOD_LABEL[order.shipping_method]}
+                </span>
+              </Detail>
               <Detail label="Destinatário">{address.recipient_name}</Detail>
-              <Detail label="Endereço">
+              <Detail label={order.shipping_method === "pickup" ? "Endereço do cliente" : "Endereço"}>
                 {address.street}, {address.number}
                 {address.complement ? `, ${address.complement}` : ""}
                 <br />
