@@ -25,6 +25,7 @@ type CartContextValue = {
   add: (variantId: string, quantity: number) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   remove: (variantId: string) => void;
+  clear: () => void;
   open: boolean;
   setOpen: (open: boolean) => void;
 };
@@ -84,7 +85,11 @@ const noopSubscribe = () => () => {};
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const items = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
-  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const hydrated = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
   const [open, setOpen] = useState(false);
 
   const add = useCallback(
@@ -106,6 +111,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     (variantId: string) => writeCart(getSnapshot().filter((item) => item.variantId !== variantId)),
     [],
   );
+  const clear = useCallback(() => writeCart([]), []);
 
   const value = useMemo(
     () => ({
@@ -115,10 +121,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       add,
       setQuantity,
       remove,
+      clear,
       open,
       setOpen,
     }),
-    [items, hydrated, add, setQuantity, remove, open],
+    [items, hydrated, add, setQuantity, remove, clear, open],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

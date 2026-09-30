@@ -146,14 +146,11 @@ export function CartContents({ onNavigate, variant }: Props) {
           ) : null}
         </dl>
         <div className="mt-5 space-y-2">
-          <button
-            type="button"
-            disabled
-            className="flex h-12 w-full items-center justify-center rounded-full bg-wine text-sm font-semibold text-cream disabled:opacity-45"
-          >
-            Finalizar compra
-          </button>
-          <p className="text-center text-xs text-ink-muted">O pagamento será liberado na próxima etapa do projeto.</p>
+          {lines.length > 0 ? (
+            <ButtonLink href="/checkout" size="lg" onClick={onNavigate} className="w-full">
+              Finalizar compra
+            </ButtonLink>
+          ) : null}
           {!page ? (
             <ButtonLink href="/carrinho" variant="ghost" onClick={onNavigate} className="w-full">
               Ver carrinho completo
