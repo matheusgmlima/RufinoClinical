@@ -45,7 +45,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </div>
         </div>
       </aside>
-      <div className="min-w-0 flex-1 px-4 py-8 lg:px-10 lg:py-10">{children}</div>
+      <div data-admin-content className="min-w-0 flex-1 px-4 py-8 lg:px-10 lg:py-10">
+        {children}
+      </div>
     </div>
   );
 }

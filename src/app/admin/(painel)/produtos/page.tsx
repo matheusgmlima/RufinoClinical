@@ -4,6 +4,7 @@ import Form from "next/form";
 import Image from "next/image";
 import Link from "next/link";
 
+import { PendingLink } from "@/components/admin/pending-link";
 import { ActiveBadge, AdminHeader } from "@/components/admin/ui";
 import { buttonClass, ButtonLink } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/field";
@@ -74,7 +75,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
         <ul className="flex flex-wrap gap-2">
           {([undefined, ...Object.keys(FILTERS)] as (Filter | undefined)[]).map((value) => (
             <li key={value ?? "all"}>
-              <Link
+              <PendingLink
                 href={href({ filtro: value, q })}
                 aria-current={value === filtro ? "page" : undefined}
                 className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium ${
@@ -82,7 +83,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
                 }`}
               >
                 {value ? FILTERS[value] : "Todos"}
-              </Link>
+              </PendingLink>
             </li>
           ))}
         </ul>
@@ -154,9 +155,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
       {pages > 1 ? (
         <nav aria-label="Páginas" className="mt-6 flex items-center justify-between gap-4 text-sm">
           {page > 1 ? (
-            <Link href={href({ filtro, q, pagina: page - 1 })} className="font-semibold text-wine hover:underline">
+            <PendingLink href={href({ filtro, q, pagina: page - 1 })} className="rounded-md font-semibold text-wine hover:underline">
               ← Anteriores
-            </Link>
+            </PendingLink>
           ) : (
             <span />
           )}
@@ -164,9 +165,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
             Página {page} de {pages}
           </span>
           {page < pages ? (
-            <Link href={href({ filtro, q, pagina: page + 1 })} className="font-semibold text-wine hover:underline">
+            <PendingLink href={href({ filtro, q, pagina: page + 1 })} className="rounded-md font-semibold text-wine hover:underline">
               Próximos →
-            </Link>
+            </PendingLink>
           ) : (
             <span />
           )}

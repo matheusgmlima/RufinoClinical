@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PendingLink } from "@/components/admin/pending-link";
 import { AdminHeader } from "@/components/admin/ui";
 import {
   AUDIT_TABLES,
@@ -58,7 +59,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
         <ul className="flex gap-2">
           {([undefined, ...Object.keys(AUDIT_TABLES)] as (AuditTable | undefined)[]).map((value) => (
             <li key={value ?? "all"}>
-              <Link
+              <PendingLink
                 href={href({ tabela: value })}
                 aria-current={value === tabela ? "page" : undefined}
                 className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium ${
@@ -66,7 +67,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
                 }`}
               >
                 {value ? AUDIT_TABLES[value] : "Tudo"}
-              </Link>
+              </PendingLink>
             </li>
           ))}
         </ul>
@@ -118,9 +119,9 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
       {pages > 1 ? (
         <nav aria-label="Páginas" className="mt-6 flex items-center justify-between gap-4 text-sm">
           {page > 1 ? (
-            <Link href={href({ tabela, pagina: page - 1 })} className="font-semibold text-wine hover:underline">
+            <PendingLink href={href({ tabela, pagina: page - 1 })} className="rounded-md font-semibold text-wine hover:underline">
               ← Mais recentes
-            </Link>
+            </PendingLink>
           ) : (
             <span />
           )}
@@ -128,9 +129,9 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
             Página {page} de {pages}
           </span>
           {page < pages ? (
-            <Link href={href({ tabela, pagina: page + 1 })} className="font-semibold text-wine hover:underline">
+            <PendingLink href={href({ tabela, pagina: page + 1 })} className="rounded-md font-semibold text-wine hover:underline">
               Mais antigos →
-            </Link>
+            </PendingLink>
           ) : (
             <span />
           )}

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
 
+import { PendingLink } from "@/components/admin/pending-link";
 import { AdminHeader, StatusBadge } from "@/components/admin/ui";
 import { buttonClass } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/field";
@@ -63,7 +64,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
         <ul className="flex gap-2">
           {[undefined, ...STATUSES].map((value) => (
             <li key={value ?? "all"}>
-              <Link
+              <PendingLink
                 href={href({ status: value, q })}
                 aria-current={value === status ? "page" : undefined}
                 className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium ${
@@ -71,7 +72,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                 }`}
               >
                 {value ? ORDER_STATUS_LABEL[value] : "Todos"}
-              </Link>
+              </PendingLink>
             </li>
           ))}
         </ul>
@@ -129,9 +130,9 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
       {pages > 1 ? (
         <nav aria-label="Páginas" className="mt-6 flex items-center justify-between gap-4 text-sm">
           {page > 1 ? (
-            <Link href={href({ status, q, pagina: page - 1 })} className="font-semibold text-wine hover:underline">
+            <PendingLink href={href({ status, q, pagina: page - 1 })} className="rounded-md font-semibold text-wine hover:underline">
               ← Anteriores
-            </Link>
+            </PendingLink>
           ) : (
             <span />
           )}
@@ -139,9 +140,9 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
             Página {page} de {pages}
           </span>
           {page < pages ? (
-            <Link href={href({ status, q, pagina: page + 1 })} className="font-semibold text-wine hover:underline">
+            <PendingLink href={href({ status, q, pagina: page + 1 })} className="rounded-md font-semibold text-wine hover:underline">
               Próximos →
-            </Link>
+            </PendingLink>
           ) : (
             <span />
           )}

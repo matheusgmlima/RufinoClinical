@@ -73,6 +73,14 @@
   box-shadow: var(--shadow-card);
 }
 
+/* While a filter or page link is loading (PendingLink), the lists it will replace fade out. */
+[data-admin-content] .surface {
+  transition: opacity 150ms ease-out;
+}
+[data-admin-content]:has([data-pending]) .surface {
+  opacity: 0.5;
+}
+
 /* Focus ring that stays visible on wine backgrounds (admin sidebar). */
 .on-dark :focus-visible {
   outline-color: var(--color-cream);
