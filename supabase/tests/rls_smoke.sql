@@ -133,6 +133,13 @@ select pg_temp.val('admin: stock out', '5', $q$select public.adjust_stock('00000
 select pg_temp.try('admin: stock below zero', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', -6)$q$);
 select pg_temp.val('admin: adjustments reach the ledger', '2', $q$select count(*)::text from public.stock_movements where actor_id = auth.uid()$q$);
 select pg_temp.try('admin: edit coupon usage count', 'blocked', 'update public.coupons set redemptions_count = 0');
+select pg_temp.try('admin: edit product', 'allowed rows=1', $q$update public.products set name = 'Produto editado' where slug = 'rascunho'$q$);
+select pg_temp.try('admin: change product id', 'blocked', $q$update public.products set id = gen_random_uuid() where slug = 'rascunho'$q$);
+select pg_temp.try('admin: backdate product', 'blocked', $q$update public.products set created_at = now() - interval '1 year'$q$);
+select pg_temp.try('admin: add image', 'allowed rows=1', $q$insert into public.product_images (product_id, variant_id, storage_path, alt) values ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-00000000b001', 'products/a001/foto.jpg', 'Foto')$q$);
+select pg_temp.try('admin: image with variant of another product', 'blocked', $q$insert into public.product_images (product_id, variant_id, storage_path, alt) values ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-00000000b002', 'products/a001/outra.jpg', 'Outra')$q$);
+select pg_temp.try('admin: repoint image file', 'blocked', $q$update public.product_images set storage_path = 'products/x.jpg'$q$);
+select pg_temp.try('admin: edit image alt', 'allowed rows=1', $q$update public.product_images set alt = 'Foto nova', position = 1$q$);
 reset role;
 
 -- Payment integration (service role) ---------------------------------------------------
