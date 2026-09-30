@@ -10,6 +10,14 @@ export const ORDER_STATUS_LABEL: Record<Enums<"order_status">, string> = {
   refunded: "Reembolsado",
 };
 
+/** Status as the customer reads it: a courier ride or a pickup is not "sent". */
+export function orderStatusLabel(status: Enums<"order_status">, method: Enums<"shipping_method"> = "standard"): string {
+  if (method === "local" && status === "shipped") return "Saiu para entrega";
+  if (method === "pickup" && status === "shipped") return "Pronto para retirada";
+  if (method === "pickup" && status === "delivered") return "Retirado";
+  return ORDER_STATUS_LABEL[status];
+}
+
 export const PAYMENT_METHOD_LABEL: Record<Enums<"payment_method">, string> = {
   pix: "Pix",
   credit_card: "Cartão de crédito",

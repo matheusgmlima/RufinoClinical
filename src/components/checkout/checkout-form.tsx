@@ -1,6 +1,6 @@
 "use client";
 
-import { Barcode, CreditCard, LockSimple, PixLogo, Plus } from "@phosphor-icons/react";
+import { Barcode, CreditCard, LockSimple, Moped, Package, PixLogo, Plus, Storefront } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
@@ -10,7 +10,9 @@ import { AddressForm, type AddressValues } from "@/components/account/address-fo
 import { useCart } from "@/components/cart/cart-provider";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/field";
+import type { DeliverySettings } from "@/lib/catalog/queries";
 import { cardClaim, cardOffer, formatBRL, type CardTerms } from "@/lib/money";
+import { SHIPPING_METHOD_LABEL, shippingDetail, shippingPrice, type ShippingMethod } from "@/lib/shipping/options";
 import { formatCep, formatDocument, isValidDocument, onlyDigits } from "@/lib/validation/br";
 
 import { OrderSummary } from "./order-summary";
@@ -22,6 +24,7 @@ const PAYMENT_CHOICES = [
   { value: "credit_card", title: "Cartão de crédito", Icon: CreditCard, detail: "" },
   { value: "boleto", title: "Boleto", Icon: Barcode, detail: "Vence em 3 dias · confirmação em até 3 dias úteis" },
 ] as const;
+const SHIPPING_ICON = { standard: Package, local: Moped, pickup: Storefront } as const;
 type Problem = CheckoutQuote["problems"][number];
 type Props = {
   addresses: (AddressValues & { id: string })[];
@@ -29,6 +32,7 @@ type Props = {
   needsDocument: boolean;
   pixDiscountPercent: number;
   card: CardTerms;
+  pickup: DeliverySettings["pickup"];
   enabled: boolean;
 };
 
@@ -41,7 +45,7 @@ function problemMessage({ problem, available, min_subtotal_cents }: Problem): st
     case "insufficient_stock":
       return `Um dos itens tem só ${available ?? 0} em estoque.`;
     case "shipping_unavailable":
-      return "Ainda não entregamos nesse endereço.";
+      return "Essa forma de entrega não atende o endereço escolhido.";
     case "address_not_found":
       return "Escolha um endereço de entrega.";
     default:
@@ -81,11 +85,12 @@ function Choice(props: {
   );
 }
 
-export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscountPercent, card, enabled }: Props) {
+export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscountPercent, card, pickup, enabled }: Props) {
   const router = useRouter();
   const { items, hydrated, clear } = useCart();
   const [addressId, setAddressId] = useState(addresses[0]?.id);
   const [adding, setAdding] = useState(addresses.length === 0);
+  const [shipping, setShipping] = useState<ShippingMethod>("standard");
   const [method, setMethod] = useState<Method>("pix");
   const [coupon, setCoupon] = useState("");
   const [couponDraft, setCouponDraft] = useState("");
@@ -107,9 +112,12 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
     if (!hydrated || items.length === 0 || !selectedId) return;
     const id = ++request.current;
     startQuote(async () => {
-      const result = await quoteCheckout({ items, addressId: selectedId, method, coupon }).catch(() => null);
+      const result = await quoteCheckout({ items, addressId: selectedId, shipping, method, coupon }).catch(() => null);
       if (id !== request.current) return;
       setQuote(result);
+      // Another address may not have the chosen option (local delivery is by distance): fall back.
+      const options = result?.shipping_options ?? [];
+      if (options.length && !options.some((option) => option.method === shipping)) setShipping(options[0].method);
       setError(result ? null : "Não foi possível calcular o total. Verifique sua conexão e tente de novo.");
       const couponProblem = result?.problems.find((p) => p.problem.startsWith("coupon_"));
       if (couponProblem) {
@@ -117,7 +125,7 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
         setCoupon("");
       }
     });
-  }, [items, hydrated, selectedId, method, coupon]);
+  }, [items, hydrated, selectedId, shipping, method, coupon]);
 
   if (done)
     return (
@@ -144,7 +152,14 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
     if (!selectedId) return;
     setError(null);
     startPlacing(async () => {
-      const result = await placeOrder({ items, addressId: selectedId, method, coupon, document: documentDigits }).catch(
+      const result = await placeOrder({
+        items,
+        addressId: selectedId,
+        shipping,
+        method,
+        coupon,
+        document: documentDigits,
+      }).catch(
         () => ({ error: "Sem conexão com a loja. Confira sua internet e tente de novo." }),
       );
       if ("error" in result) {
@@ -187,6 +202,30 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
             </Button>
           ) : null}
         </fieldset>
+
+        {quote?.shipping_options.length ? (
+          <fieldset className="space-y-3">
+            <legend className="mb-4 text-lg font-semibold text-ink">Forma de entrega</legend>
+            {quote.shipping_options.map((option) => {
+              const Icon = SHIPPING_ICON[option.method];
+              const where =
+                option.method === "pickup" && pickup
+                  ? ` ${pickup.address}${pickup.hours ? ` · ${pickup.hours}` : ""}.`
+                  : "";
+              return (
+                <Choice
+                  key={option.method}
+                  name="shipping"
+                  checked={option.method === shipping}
+                  onChange={() => setShipping(option.method)}
+                  icon={<Icon size={18} className="text-wine" aria-hidden="true" />}
+                  title={`${SHIPPING_METHOD_LABEL[option.method]} · ${shippingPrice(option)}`}
+                  detail={shippingDetail(option) + where}
+                />
+              );
+            })}
+          </fieldset>
+        ) : null}
 
         {needsDocument ? (
           <Field
@@ -276,11 +315,6 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
           </p>
         )}
         {offer ? <p className="text-right text-xs text-ink-muted">em {offer}</p> : null}
-        {quote?.shipping_max_days ? (
-          <p className="text-xs text-ink-muted">
-            Entrega em {quote.shipping_min_days} a {quote.shipping_max_days} dias úteis após a postagem.
-          </p>
-        ) : null}
 
         {blocking.length > 0 ? (
           <FormAlert>

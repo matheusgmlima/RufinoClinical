@@ -79,6 +79,38 @@ export const getStoreSettings = cache(async (): Promise<StoreSettings> => {
   };
 });
 
+export type DeliverySettings = {
+  /** Same-day courier around the stock; `city` is where the stock is. */
+  local: { priceCents: number; cutoff: string; city: string | null } | null;
+  pickup: { address: string; hours: string | null } | null;
+};
+
+/** Local delivery and pickup, for the product page, checkout and orders (not every page). */
+export const getDeliverySettings = cache(async (): Promise<DeliverySettings> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select(
+      "origin_zip, local_delivery_enabled, local_delivery_price_cents, local_delivery_cutoff, pickup_enabled, pickup_address, pickup_hours",
+    )
+    .single();
+  if (error) throw error;
+
+  let city: string | null = null;
+  if (data.local_delivery_enabled && data.origin_zip) {
+    const { data: place } = await supabase.rpc("estimate_shipping", { p_zip: data.origin_zip });
+    const found = (place as { city?: unknown } | null)?.city;
+    city = typeof found === "string" ? found : null;
+  }
+  return {
+    local: data.local_delivery_enabled
+      ? { priceCents: data.local_delivery_price_cents, cutoff: data.local_delivery_cutoff.slice(0, 5), city }
+      : null,
+    pickup:
+      data.pickup_enabled && data.pickup_address ? { address: data.pickup_address, hours: data.pickup_hours } : null,
+  };
+});
+
 export const getCategories = cache(async (): Promise<Category[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase

@@ -5,14 +5,17 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
 import { cartSchema } from "@/lib/cart/schema";
 import { createPixOrBoleto, loadPayableOrder, paymentsEnabled } from "@/lib/payments/mercadopago";
+import { ensureCepLocation } from "@/lib/shipping/cep-location";
+import { SHIPPING_METHODS, shippingOptionSchema } from "@/lib/shipping/options";
 import { createClient } from "@/lib/supabase/server";
 import { isValidDocument, onlyDigits } from "@/lib/validation/br";
 
-// The browser sends only choices (items, address, method, coupon). Every amount comes from
+// The browser sends only choices (items, address, shipping, method, coupon). Every amount comes from
 // quote_order/create_order in the database.
 const checkoutSchema = z.object({
   items: cartSchema.min(1),
   addressId: z.uuid(),
+  shipping: z.enum(SHIPPING_METHODS),
   method: z.enum(["pix", "credit_card", "boleto"]),
   coupon: z
     .string()
@@ -30,26 +33,36 @@ const quoteSchema = z.object({
   discount_cents: int,
   payment_discount_cents: int,
   shipping_cents: int.nullable(),
-  shipping_min_days: int.nullable(),
-  shipping_max_days: int.nullable(),
+  shipping_options: z.array(shippingOptionSchema),
   total_cents: int,
   coupon_code: z.string().nullable(),
 });
 export type CheckoutQuote = z.infer<typeof quoteSchema>;
 
-function rpcArgs({ items, addressId, method, coupon }: z.infer<typeof checkoutSchema>) {
+function rpcArgs({ items, addressId, shipping, method, coupon }: z.infer<typeof checkoutSchema>) {
   return {
     p_items: items.map((item) => ({ variant_id: item.variantId, quantity: item.quantity })),
     p_address_id: addressId,
     p_payment_method: method,
     p_coupon_code: coupon || undefined,
+    p_shipping: shipping,
   };
+}
+
+type Client = Awaited<ReturnType<typeof createClient>>;
+
+/** The database prices local delivery by the address CEP's location, which must be cached first. */
+async function locateAddress(supabase: Client, addressId: string) {
+  // RLS: only the buyer's own address comes back.
+  const { data } = await supabase.from("addresses").select("zip_code").eq("id", addressId).maybeSingle();
+  if (data) await ensureCepLocation(data.zip_code);
 }
 
 export async function quoteCheckout(input: unknown): Promise<CheckoutQuote | null> {
   const parsed = checkoutSchema.safeParse(input);
   if (!parsed.success || !(await getSessionUser())) return null;
   const supabase = await createClient();
+  await locateAddress(supabase, parsed.data.addressId);
   const { data, error } = await supabase.rpc("quote_order", rpcArgs(parsed.data));
   return error ? null : (quoteSchema.safeParse(data).data ?? null);
 }
@@ -82,6 +95,7 @@ export async function placeOrder(input: unknown): Promise<{ orderId: string } | 
     if (error) return { error: "Não foi possível salvar o CPF ou CNPJ." };
   }
 
+  await locateAddress(supabase, parsed.data.addressId);
   const { data, error } = await supabase.rpc("create_order", rpcArgs(parsed.data));
   if (error) return { error: ORDER_ERRORS[error.message] ?? "Não foi possível criar o pedido. Tente de novo." };
   const orderId = z.object({ order_id: z.uuid() }).safeParse(data).data?.order_id;
