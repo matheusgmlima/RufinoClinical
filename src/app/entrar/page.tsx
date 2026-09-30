@@ -15,7 +15,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/entrar">) 
 
   return (
     <AuthShell title="Entrar" lead="Acesse sua conta para finalizar compras e acompanhar pedidos.">
-      <LoginForm next={next} linkExpired={params.erro === "link"} />
+      <LoginForm
+        next={next}
+        notice={params.aviso === "confirmado" ? "confirmed" : params.erro === "link" ? "expired" : null}
+      />
     </AuthShell>
   );
 }

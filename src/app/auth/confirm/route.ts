@@ -25,6 +25,15 @@ export async function GET(request: NextRequest) {
   } else if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) redirect(next);
+    // Opened in another browser or device: Supabase already confirmed the e-mail, but only the browser
+    // that asked for the link can finish the sign-in (PKCE). A password reset must be reopened there.
+    if (error.code === "pkce_code_verifier_not_found") {
+      redirect(
+        next === "/conta/nova-senha"
+          ? "/recuperar-senha?erro=aparelho"
+          : `/entrar?aviso=confirmado&next=${encodeURIComponent(next)}`,
+      );
+    }
   }
 
   redirect("/entrar?erro=link");

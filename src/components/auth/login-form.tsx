@@ -12,17 +12,21 @@ import { createClient } from "@/lib/supabase/client";
 import { PasswordInput } from "./password-input";
 
 // Sign-in runs in the browser so Supabase rate-limits by the shopper's own IP, not the server's.
-export function LoginForm({ next, linkExpired }: { next: string; linkExpired: boolean }) {
+export function LoginForm({ next, notice }: { next: string; notice: "confirmed" | "expired" | null }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(linkExpired ? "O link expirou ou já foi usado. Peça um novo." : null);
+  const [error, setError] = useState<string | null>(
+    notice === "expired" ? "O link expirou ou já foi usado. Peça um novo." : null,
+  );
   const [unconfirmed, setUnconfirmed] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "").trim().toLowerCase();
+    const email = String(form.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const password = String(form.get("password") ?? "");
     setPending(true);
     setError(null);
@@ -51,6 +55,12 @@ export function LoginForm({ next, linkExpired }: { next: string; linkExpired: bo
   return (
     <form onSubmit={onSubmit} className="grid gap-5" noValidate={false}>
       {error ? <FormAlert>{error}</FormAlert> : null}
+      {notice === "confirmed" && !error ? (
+        <FormAlert tone="success">
+          Link aberto em outro navegador. Se era a confirmação do cadastro, seu e-mail já está confirmado: entre com sua
+          senha.
+        </FormAlert>
+      ) : null}
       {unconfirmed && !resent ? (
         <button type="button" onClick={resend} className="justify-self-start text-sm font-semibold text-wine underline">
           Reenviar link de confirmação

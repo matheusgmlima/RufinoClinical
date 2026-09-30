@@ -5,10 +5,14 @@ import { ForgotForm } from "@/components/auth/forgot-form";
 
 export const metadata: Metadata = { title: "Recuperar senha" };
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage({ searchParams }: PageProps<"/recuperar-senha">) {
+  const { erro } = await searchParams;
   return (
-    <AuthShell title="Recuperar senha" lead="Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha.">
-      <ForgotForm />
+    <AuthShell
+      title="Recuperar senha"
+      lead="Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha."
+    >
+      <ForgotForm otherDevice={erro === "aparelho"} />
     </AuthShell>
   );
 }

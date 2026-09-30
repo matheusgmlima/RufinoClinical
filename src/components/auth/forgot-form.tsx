@@ -7,14 +7,18 @@ import { Field, FormAlert, Input } from "@/components/ui/field";
 import { authErrorMessage } from "@/lib/auth/errors";
 import { createClient } from "@/lib/supabase/client";
 
-export function ForgotForm() {
+export function ForgotForm({ otherDevice }: { otherDevice: boolean }) {
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    otherDevice ? "Abra o link no mesmo aparelho e navegador em que pediu a nova senha, ou peça outro abaixo." : null,
+  );
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim().toLowerCase();
+    const email = String(new FormData(event.currentTarget).get("email") ?? "")
+      .trim()
+      .toLowerCase();
     setPending(true);
     setError(null);
     const { error } = await createClient().auth.resetPasswordForEmail(email, {
