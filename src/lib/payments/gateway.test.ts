@@ -5,6 +5,7 @@ import {
   cardRejectionMessage,
   isoDuration,
   mpOrderSchema,
+  orderItems,
   splitName,
   toPaymentRecord,
   verifyWebhookSignature,
@@ -120,6 +121,17 @@ describe("helpers", () => {
   it("writes the time left as an ISO 8601 duration", () => {
     expect(isoDuration(59 * 60_000 + 30_000)).toBe("PT0H59M");
     expect(isoDuration(3 * 86_400_000 - 60_000)).toBe("P2DT23H59M");
+  });
+
+  it("sends items only when they add up to the total (Mercado Pago refuses a mismatch)", () => {
+    const items = [{ sku: "KT-5", product_name: "Kinesio", variant_name: "Bege", quantity: 2, unit_price_cents: 1990 }];
+    expect(orderItems({ total_cents: 5970, shipping_cents: 1990, items })).toEqual({
+      items: [
+        { title: "Kinesio - Bege", unit_price: "19.90", quantity: 2, external_code: "KT-5" },
+        { title: "Frete", unit_price: "19.90", quantity: 1, external_code: "FRETE" },
+      ],
+    });
+    expect(orderItems({ total_cents: 5770, shipping_cents: 1990, items })).toEqual({}); // Pix discount
   });
 
   it("splits names for the payer", () => {
