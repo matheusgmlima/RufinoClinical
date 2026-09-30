@@ -1,4 +1,4 @@
-import { ArrowCounterClockwise, Info, PixLogo, Plus, Truck } from "@phosphor-icons/react/ssr";
+import { ArrowCounterClockwise, Info, Moped, PixLogo, Plus, Storefront, Truck } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +7,9 @@ import { ProductCard } from "@/components/product/product-card";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductPurchase } from "@/components/product/product-purchase";
 import { ProductView } from "@/components/product/product-view";
-import { getProductBySlug, getProducts, getStoreSettings } from "@/lib/catalog/queries";
+import { getDeliverySettings, getProductBySlug, getProducts, getStoreSettings } from "@/lib/catalog/queries";
+import { formatBRL } from "@/lib/money";
+import { formatCutoff } from "@/lib/shipping/options";
 
 export async function generateMetadata({ params }: PageProps<"/produtos/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -21,7 +23,11 @@ export async function generateMetadata({ params }: PageProps<"/produtos/[slug]">
 
 export default async function ProductPage({ params }: PageProps<"/produtos/[slug]">) {
   const { slug } = await params;
-  const [product, settings] = await Promise.all([getProductBySlug(slug), getStoreSettings()]);
+  const [product, settings, delivery] = await Promise.all([
+    getProductBySlug(slug),
+    getStoreSettings(),
+    getDeliverySettings(),
+  ]);
   if (!product) notFound();
 
   const related = product.category
@@ -92,6 +98,24 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
                     <PixLogo size={20} className="text-wine" aria-hidden="true" />
                     {settings.pixDiscountPercent}% de desconto pagando com Pix
                   </li>
+                  {delivery.local ? (
+                    <li className="flex items-center gap-3">
+                      <Moped size={20} className="shrink-0 text-wine" aria-hidden="true" />
+                      <span>
+                        <strong className="font-semibold text-ink">
+                          Entrega no mesmo dia em {delivery.local.city ?? "nossa cidade"} e região
+                        </strong>{" "}
+                        por {formatBRL(delivery.local.priceCents)}, pagando até {formatCutoff(delivery.local.cutoff)} em
+                        dia útil
+                      </span>
+                    </li>
+                  ) : null}
+                  {delivery.pickup ? (
+                    <li className="flex items-center gap-3">
+                      <Storefront size={20} className="shrink-0 text-wine" aria-hidden="true" />
+                      Retirada grátis na loja
+                    </li>
+                  ) : null}
                   <li className="flex items-center gap-3">
                     <Truck size={20} className="text-wine" aria-hidden="true" />
                     Frete para todo o Brasil, calculado pelo CEP

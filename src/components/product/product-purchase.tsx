@@ -11,6 +11,7 @@ import { formatBRL, pixPriceCents } from "@/lib/money";
 
 import { Price } from "./price";
 import { useProductView } from "./product-view";
+import { ShippingCalculator } from "./shipping-calculator";
 
 const LOW_STOCK = 5;
 
@@ -120,6 +121,8 @@ export function ProductPurchase({
               : "Em estoque, pronto para envio."}
         </p>
       </div>
+
+      {!soldOut ? <ShippingCalculator variantId={variant.id} quantity={Math.min(quantity, maxQuantity)} /> : null}
 
       <div
         inert={!showBar}
