@@ -66,7 +66,7 @@ export function AddressForm({
   }
 
   return (
-    <form action={action} className="grid gap-5 rounded-2xl border border-line p-5 sm:p-6">
+    <form action={action} className="surface grid gap-5 p-5 sm:p-6">
       {state.status === "error" && state.message ? <FormAlert>{state.message}</FormAlert> : null}
       <input type="hidden" name="id" value={initial?.id ?? ""} />
 

@@ -19,10 +19,12 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-semibold tracking-tight text-ink">Meus dados</h1>
-      <ProfileForm
-        email={user.email}
-        profile={profile ?? { full_name: null, phone: null, document: null, marketing_opt_in: false }}
-      />
+      <section className="surface p-5 sm:p-6">
+        <ProfileForm
+          email={user.email}
+          profile={profile ?? { full_name: null, phone: null, document: null, marketing_opt_in: false }}
+        />
+      </section>
       <PrivacyPanel />
     </div>
   );

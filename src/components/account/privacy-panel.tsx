@@ -15,7 +15,7 @@ export function PrivacyPanel() {
   const error = state.fieldErrors?.confirm;
 
   return (
-    <section aria-labelledby="privacy-title" className="space-y-5 border-t border-line pt-8">
+    <section aria-labelledby="privacy-title" className="surface space-y-5 p-5 sm:p-6">
       <div>
         <h2 id="privacy-title" className="text-xl font-semibold text-ink">
           Privacidade

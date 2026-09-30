@@ -21,7 +21,7 @@ export function AddressList({ addresses, defaultName }: { addresses: Address[]; 
         editing === address.id ? (
           <AddressForm key={address.id} initial={address} defaultName={defaultName} onDone={() => setEditing(null)} />
         ) : (
-          <article key={address.id} className="rounded-2xl border border-line p-5">
+          <article key={address.id} className="surface p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <p className="flex items-center gap-2 font-semibold text-ink">
                 <MapPin size={18} className="text-wine" aria-hidden="true" />

@@ -24,7 +24,7 @@ export function AccountNav({ admin = false }: { admin?: boolean }) {
                 href={link.href}
                 aria-current={current ? "page" : undefined}
                 className={`inline-flex h-10 items-center whitespace-nowrap rounded-full px-5 text-sm font-medium transition lg:flex lg:w-full ${
-                  current ? "bg-wine text-cream" : "text-ink hover:bg-blush"
+                  current ? "bg-wine text-cream" : "text-ink hover:bg-white"
                 }`}
               >
                 {link.label}
@@ -33,10 +33,10 @@ export function AccountNav({ admin = false }: { admin?: boolean }) {
           );
         })}
         {admin ? (
-          <li className="lg:mt-3 lg:border-t lg:border-line lg:pt-3">
+          <li className="lg:mt-3 lg:border-t lg:border-wine/10 lg:pt-3">
             <Link
               href="/admin"
-              className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-wine/25 px-5 text-sm font-semibold text-wine transition hover:border-wine hover:bg-wine/5 lg:flex lg:w-full"
+              className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-wine/25 bg-white px-5 text-sm font-semibold text-wine transition hover:border-wine lg:flex lg:w-full"
             >
               <Storefront size={18} aria-hidden="true" />
               Painel da loja

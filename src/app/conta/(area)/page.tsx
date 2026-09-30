@@ -33,7 +33,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
               <li key={order.id}>
                 <Link
                   href={`/pedido/${order.id}`}
-                  className="block rounded-2xl border border-line p-5 transition hover:border-wine/40"
+                  className="surface block p-5 transition hover:border-wine/40"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -61,7 +61,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
           })}
         </ul>
       ) : (
-        <div className="flex flex-col items-center gap-5 rounded-2xl bg-blush px-6 py-16 text-center">
+        <div className="surface flex flex-col items-center gap-5 px-6 py-16 text-center">
           <LogoSymbol className="h-14 w-auto text-wine/20" />
           <div className="space-y-1.5">
             <p className="text-lg font-semibold text-ink">Você ainda não fez pedidos</p>
