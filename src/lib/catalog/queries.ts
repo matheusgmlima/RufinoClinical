@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 
+import type { CardTerms } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 import { productImageUrl } from "./images";
@@ -9,10 +10,8 @@ import { summarize, toImages, toVariants, type ImageRow, type VariantRow } from 
 // Reads go through the per-request client (publishable key + user session), so RLS only
 // returns active products and variants.
 
-export type StoreSettings = {
+export type StoreSettings = CardTerms & {
   pixDiscountPercent: number;
-  maxInstallments: number;
-  minInstallmentCents: number;
   freeShippingThresholdCents: number | null;
 };
 
@@ -67,12 +66,15 @@ export const getStoreSettings = cache(async (): Promise<StoreSettings> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("store_settings")
-    .select("pix_discount_percent, max_installments, min_installment_cents, free_shipping_threshold_cents")
+    .select(
+      "pix_discount_percent, max_installments, interest_free_installments, min_installment_cents, free_shipping_threshold_cents",
+    )
     .single();
   if (error) throw error;
   return {
     pixDiscountPercent: Number(data.pix_discount_percent),
     maxInstallments: data.max_installments,
+    interestFreeInstallments: data.interest_free_installments,
     minInstallmentCents: data.min_installment_cents,
     freeShippingThresholdCents: data.free_shipping_threshold_cents,
   };
