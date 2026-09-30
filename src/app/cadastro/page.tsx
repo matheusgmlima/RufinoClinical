@@ -5,6 +5,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { SignupForm } from "@/components/auth/signup-form";
 import { safeNext } from "@/lib/auth/redirect";
 import { getSessionUser } from "@/lib/auth/session";
+import { legalReady } from "@/lib/legal/company";
 
 export const metadata: Metadata = { title: "Criar conta" };
 
@@ -15,7 +16,7 @@ export default async function SignupPage({ searchParams }: PageProps<"/cadastro"
 
   return (
     <AuthShell title="Criar conta" lead="Leva menos de um minuto. Profissionais e clínicas usam a mesma conta.">
-      <SignupForm next={next} />
+      <SignupForm next={next} legal={legalReady()} />
     </AuthShell>
   );
 }

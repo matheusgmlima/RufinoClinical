@@ -3,8 +3,10 @@ import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
 import type { Category } from "@/lib/catalog/queries";
+import { COMPANY, legalReady } from "@/lib/legal/company";
 
 export function Footer({ categories }: { categories: Category[] }) {
+  const legal = legalReady();
   return (
     <footer className="mt-auto border-t border-line bg-blush/60">
       <div className="container-page grid grid-cols-2 gap-x-6 gap-y-10 py-14 md:grid-cols-12 md:gap-12">
@@ -46,6 +48,25 @@ export function Footer({ categories }: { categories: Category[] }) {
                 Carrinho
               </Link>
             </li>
+            {legal ? (
+              <>
+                <li>
+                  <Link href="/trocas-e-devolucoes" className="hover:text-wine">
+                    Trocas e devoluções
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/termos" className="hover:text-wine">
+                    Termos de uso
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacidade" className="hover:text-wine">
+                    Privacidade
+                  </Link>
+                </li>
+              </>
+            ) : null}
           </ul>
         </nav>
 
@@ -66,7 +87,15 @@ export function Footer({ categories }: { categories: Category[] }) {
       </div>
       <div className="border-t border-line">
         <div className="container-page flex flex-col gap-2 py-6 text-xs text-ink-muted sm:flex-row sm:justify-between">
-          <p>© {new Date().getFullYear()} Rufino Clinical</p>
+          {/* Decreto 7.962/2013: who sells, with document, address and contact. */}
+          <p>
+            © {new Date().getFullYear()} {legal ? `${COMPANY.legalName} · ${COMPANY.document}` : "Rufino Clinical"}
+            {legal ? (
+              <span className="block">
+                {COMPANY.address} · {COMPANY.email} · {COMPANY.phone}
+              </span>
+            ) : null}
+          </p>
           <p>Produtos para saúde. Use com orientação de um profissional.</p>
         </div>
       </div>

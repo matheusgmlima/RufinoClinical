@@ -13,7 +13,7 @@ import { PasswordInput } from "./password-input";
 
 type Errors = Partial<Record<"name" | "email" | "password", string>>;
 
-export function SignupForm({ next }: { next: string }) {
+export function SignupForm({ next, legal }: { next: string; legal: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
@@ -85,6 +85,19 @@ export function SignupForm({ next }: { next: string }) {
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? "Criando conta..." : "Criar conta"}
       </Button>
+      {legal ? (
+        <p className="text-center text-xs text-ink-muted">
+          Ao criar a conta, você aceita os{" "}
+          <Link href="/termos" className="font-semibold text-wine hover:underline">
+            Termos de uso
+          </Link>{" "}
+          e a{" "}
+          <Link href="/privacidade" className="font-semibold text-wine hover:underline">
+            Política de privacidade
+          </Link>
+          .
+        </p>
+      ) : null}
       <p className="text-center text-sm text-ink-muted">
         Já tem conta?{" "}
         <Link href={`/entrar?next=${encodeURIComponent(next)}`} className="font-semibold text-wine hover:underline">
