@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBRL, installmentPlan, pixPriceCents } from "./money";
+import { cardClaim, cardOffer, formatBRL, installmentPlan, pixPriceCents } from "./money";
 
 describe("formatBRL", () => {
   it("formats cents as Brazilian reais", () => {
@@ -28,5 +28,24 @@ describe("installmentPlan", () => {
 
   it("never returns fewer than one installment", () => {
     expect(installmentPlan(1990, 6, 3000)).toEqual({ count: 1, amountCents: 1990 });
+  });
+});
+
+describe("card terms", () => {
+  const terms = { maxInstallments: 6, interestFreeInstallments: 3, minInstallmentCents: 3000 };
+  const buyerPays = { ...terms, interestFreeInstallments: 1 };
+  const text = (value: string | null) => value?.replace(/\s/g, " ");
+
+  it("promises 'sem juros' only up to the interest-free installments", () => {
+    expect(cardClaim(terms)).toBe("até 3x sem juros");
+    expect(text(cardOffer(28990, terms))).toBe("3x de R$ 96,63 sem juros");
+    expect(text(cardOffer(8990, terms))).toBe("2x de R$ 44,95 sem juros");
+  });
+
+  it("never says 'sem juros' when the buyer pays all interest", () => {
+    expect(cardClaim(buyerPays)).toBe("parcelamento em até 6x");
+    expect(cardOffer(28990, buyerPays)).toBe("até 6x no cartão");
+    expect(cardOffer(1990, buyerPays)).toBeNull();
+    expect(cardClaim({ ...buyerPays, maxInstallments: 1 })).toBeNull();
   });
 });
