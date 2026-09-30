@@ -22,6 +22,8 @@ declare global {
 
 type Props = {
   orderId: string;
+  /** Why the previous card was declined, shown until the next attempt. */
+  lastDecline: string | null;
   amountCents: number;
   email: string;
   document: string;
@@ -54,16 +56,16 @@ const LOAD_ERROR = "O formulário do cartão não carregou. Atualize a página o
  * Mercado Pago Card Payment Brick. The card is typed into Mercado Pago iframes and turned into
  * a single-use token: this page and our server only ever see the token.
  */
-export function CardPayment({ orderId, amountCents, email, document, maxInstallments, publicKey }: Props) {
+export function CardPayment({ orderId, lastDecline, amountCents, email, document, maxInstallments, publicKey }: Props) {
   const router = useRouter();
   const [sdkReady, setSdkReady] = useState(false);
   const [formReady, setFormReady] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState(lastDecline);
 
   // A blocked script or a gateway outage must not leave an empty box behind.
   useEffect(() => {
     if (formReady) return;
-    const timer = setTimeout(() => setMessage((current) => current ?? LOAD_ERROR), 20_000);
+    const timer = setTimeout(() => setMessage(LOAD_ERROR), 20_000);
     return () => clearTimeout(timer);
   }, [formReady]);
 

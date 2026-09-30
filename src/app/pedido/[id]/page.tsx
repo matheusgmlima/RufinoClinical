@@ -108,9 +108,9 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
       ) : (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-ink">Pague com cartão de crédito</h2>
-          {payment?.status === "rejected" ? <FormAlert>{cardRejectionMessage(payment.status_detail)}</FormAlert> : null}
           <CardPayment
             orderId={order.id}
+            lastDecline={payment?.status === "rejected" ? cardRejectionMessage(payment.status_detail) : null}
             amountCents={order.total_cents}
             email={order.customer_email}
             document={order.customer_document ?? ""}
