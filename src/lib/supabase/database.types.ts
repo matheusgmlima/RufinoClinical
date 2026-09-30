@@ -132,6 +132,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cep_locations: {
+        Row: {
+          cep: string
+          city: string | null
+          fetched_at: string
+          latitude: number | null
+          longitude: number | null
+          state: string | null
+        }
+        Insert: {
+          cep: string
+          city?: string | null
+          fetched_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          state?: string | null
+        }
+        Update: {
+          cep?: string
+          city?: string | null
+          fetched_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           code: string
@@ -284,6 +311,7 @@ export type Database = {
           shipping_address: Json
           shipping_cents: number
           shipping_days: number | null
+          shipping_method: Database["public"]["Enums"]["shipping_method"]
           shipping_service: string | null
           shipping_tracking_code: string | null
           status: Database["public"]["Enums"]["order_status"]
@@ -315,6 +343,7 @@ export type Database = {
           shipping_address: Json
           shipping_cents?: number
           shipping_days?: number | null
+          shipping_method?: Database["public"]["Enums"]["shipping_method"]
           shipping_service?: string | null
           shipping_tracking_code?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -346,6 +375,7 @@ export type Database = {
           shipping_address?: Json
           shipping_cents?: number
           shipping_days?: number | null
+          shipping_method?: Database["public"]["Enums"]["shipping_method"]
           shipping_service?: string | null
           shipping_tracking_code?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -699,8 +729,16 @@ export type Database = {
           free_shipping_threshold_cents: number | null
           id: boolean
           interest_free_installments: number
+          local_delivery_cutoff: string
+          local_delivery_enabled: boolean
+          local_delivery_price_cents: number
+          local_delivery_radius_km: number
           max_installments: number
           min_installment_cents: number
+          origin_zip: string | null
+          pickup_address: string | null
+          pickup_enabled: boolean
+          pickup_hours: string | null
           pix_discount_percent: number
           updated_at: string
         }
@@ -708,8 +746,16 @@ export type Database = {
           free_shipping_threshold_cents?: number | null
           id?: boolean
           interest_free_installments?: number
+          local_delivery_cutoff?: string
+          local_delivery_enabled?: boolean
+          local_delivery_price_cents?: number
+          local_delivery_radius_km?: number
           max_installments?: number
           min_installment_cents?: number
+          origin_zip?: string | null
+          pickup_address?: string | null
+          pickup_enabled?: boolean
+          pickup_hours?: string | null
           pix_discount_percent?: number
           updated_at?: string
         }
@@ -717,8 +763,16 @@ export type Database = {
           free_shipping_threshold_cents?: number | null
           id?: boolean
           interest_free_installments?: number
+          local_delivery_cutoff?: string
+          local_delivery_enabled?: boolean
+          local_delivery_price_cents?: number
+          local_delivery_radius_km?: number
           max_installments?: number
           min_installment_cents?: number
+          origin_zip?: string | null
+          pickup_address?: string | null
+          pickup_enabled?: boolean
+          pickup_hours?: string | null
           pix_discount_percent?: number
           updated_at?: string
         }
@@ -767,7 +821,6 @@ export type Database = {
         Returns: number
       }
       admin_status: { Args: never; Returns: string }
-      delete_my_account: { Args: never; Returns: undefined }
       cancel_order: { Args: { p_order_id: string }; Returns: boolean }
       create_order: {
         Args: {
@@ -775,7 +828,13 @@ export type Database = {
           p_coupon_code?: string
           p_items: Json
           p_payment_method: Database["public"]["Enums"]["payment_method"]
+          p_shipping?: Database["public"]["Enums"]["shipping_method"]
         }
+        Returns: Json
+      }
+      delete_my_account: { Args: never; Returns: undefined }
+      estimate_shipping: {
+        Args: { p_goods_cents?: number; p_zip: string }
         Returns: Json
       }
       quote_order: {
@@ -784,6 +843,7 @@ export type Database = {
           p_coupon_code?: string
           p_items: Json
           p_payment_method: Database["public"]["Enums"]["payment_method"]
+          p_shipping?: Database["public"]["Enums"]["shipping_method"]
         }
         Returns: Json
       }
@@ -813,6 +873,7 @@ export type Database = {
         | "canceled"
         | "refunded"
       payment_method: "pix" | "credit_card" | "boleto"
+      shipping_method: "standard" | "local" | "pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -951,6 +1012,7 @@ export const Constants = {
         "refunded",
       ],
       payment_method: ["pix", "credit_card", "boleto"],
+      shipping_method: ["standard", "local", "pickup"],
     },
   },
 } as const

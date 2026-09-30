@@ -22,6 +22,15 @@ insert into public.coupons (code, discount_type, discount_value) values ('SEGRED
 insert into public.orders (id, user_id, customer_name, customer_email, shipping_address, subtotal_cents, total_cents) values
   ('00000000-0000-0000-0000-0000000000d1', '11111111-1111-1111-1111-111111111111', 'Cliente Teste', 'cliente@teste.local', '{}', 1000, 1000),
   ('00000000-0000-0000-0000-0000000000d2', '11111111-1111-1111-1111-111111111111', 'Cliente Teste', 'cliente@teste.local', '{}', 1000, 1000);
+insert into public.orders (id, user_id, customer_name, customer_email, shipping_address, subtotal_cents, total_cents, shipping_method, status) values
+  ('00000000-0000-0000-0000-0000000000d3', null, 'Outro', 'outro@teste.local', '{}', 1000, 1000, 'local', 'preparing');
+-- CEP cache: Sé and Av. Paulista (about 2.6 km apart) in São Paulo, and downtown Rio.
+insert into public.cep_locations (cep, city, state, latitude, longitude) values
+  ('01001000', 'São Paulo', 'SP', -23.550520, -46.633309),
+  ('01310100', 'São Paulo', 'SP', -23.561770, -46.655330),
+  ('20040020', 'Rio de Janeiro', 'RJ', -22.903540, -43.175640)
+on conflict (cep) do update set city = excluded.city, state = excluded.state, latitude = excluded.latitude, longitude = excluded.longitude;
+update public.store_settings set local_delivery_enabled = false, pickup_enabled = false;
 insert into public.stock_movements (variant_id, delta, reason) values ('00000000-0000-0000-0000-00000000b001', -1, 'admin_adjustment');
 
 create temp table results (n serial, test text, expect text, outcome text);
@@ -67,6 +76,11 @@ select pg_temp.try('anon: call is_admin', 'allowed rows=1', 'select private.is_a
 select pg_temp.try('anon: read shipping rates', 'allowed rows=5', 'select * from public.shipping_rates');
 select pg_temp.try('anon: quote order', 'blocked', $q$select public.quote_order('[]', null, 'pix')$q$);
 select pg_temp.try('anon: create order', 'blocked', $q$select public.create_order('[]', null, 'pix')$q$);
+select pg_temp.try('anon: read CEP cache', 'blocked', 'select * from public.cep_locations');
+select pg_temp.val('anon: estimate shipping', 'São Paulo/standard', $q$select concat(e ->> 'city', '/', (select string_agg(o ->> 'method', ',') from jsonb_array_elements(e -> 'options') o)) from public.estimate_shipping('01001000') e$q$);
+select pg_temp.val('anon: estimate unknown CEP', '0', $q$select jsonb_array_length(public.estimate_shipping('00000001') -> 'options')::text$q$);
+select pg_temp.try('anon: estimate malformed CEP', 'blocked', $q$select public.estimate_shipping('0100100')$q$);
+select pg_temp.try('anon: distance function', 'blocked', $q$select private.cep_distance_km('01001000', '01310100')$q$);
 select pg_temp.try('anon: admin status', 'blocked', 'select public.admin_status()');
 select pg_temp.try('anon: delete account', 'blocked', 'select public.delete_my_account()');
 reset role;
@@ -89,6 +103,9 @@ select pg_temp.try('customer: insert category', 'blocked', $q$insert into public
 select pg_temp.try('customer: read coupons', 'allowed rows=0', 'select * from public.coupons');
 select pg_temp.try('customer: read audit log', 'allowed rows=0', 'select * from public.audit_log');
 select pg_temp.try('customer: update settings', 'allowed rows=0', 'update public.store_settings set pix_discount_percent = 30');
+select pg_temp.try('customer: cheaper local delivery', 'allowed rows=0', 'update public.store_settings set local_delivery_price_cents = 0');
+select pg_temp.try('customer: write CEP cache', 'blocked', $q$insert into public.cep_locations (cep, state) values ('99999998', 'SP')$q$);
+select pg_temp.try('customer: move CEP closer', 'blocked', $q$update public.cep_locations set latitude = -23.56, longitude = -46.65$q$);
 select pg_temp.val('customer: admin status', 'none', 'select public.admin_status()');
 select pg_temp.try('customer: adjust stock', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', 5)$q$);
 select pg_temp.try('customer: delete account with open orders', 'blocked', 'select public.delete_my_account()');
@@ -146,6 +163,8 @@ select pg_temp.try('admin: edit image alt', 'allowed rows=1', $q$update public.p
 select pg_temp.try('admin: edit settings', 'allowed rows=1', 'update public.store_settings set pix_discount_percent = 7');
 select pg_temp.try('admin: change settings row key', 'blocked', 'update public.store_settings set id = false');
 select pg_temp.try('admin: backdate settings', 'blocked', $q$update public.store_settings set updated_at = now() - interval '1 year'$q$);
+select pg_temp.try('admin: edit delivery settings', 'allowed rows=1', $q$update public.store_settings set origin_zip = '01310100', local_delivery_radius_km = 20, local_delivery_cutoff = '15:30'$q$);
+select pg_temp.try('admin: write CEP cache', 'blocked', $q$insert into public.cep_locations (cep, state) values ('99999998', 'SP')$q$);
 select pg_temp.try('admin: create coupon', 'allowed rows=1', $q$insert into public.coupons (code, discount_type, discount_value, ends_at) values ('PAINEL5', 'fixed', 500, now() + interval '1 day')$q$);
 select pg_temp.try('admin: coupon with preset usage', 'blocked', $q$insert into public.coupons (code, discount_type, discount_value, redemptions_count) values ('PAINEL6', 'fixed', 500, 3)$q$);
 select pg_temp.try('admin: delete own account', 'blocked', 'select public.delete_my_account()');
@@ -168,6 +187,8 @@ select pg_temp.try('admin: cancel paid order (needs refund via gateway)', 'block
 select pg_temp.try('admin: ship without tracking', 'blocked', $q$update public.orders set status = 'shipped' where id = '00000000-0000-0000-0000-0000000000d1'$q$);
 select pg_temp.try('admin: ship with tracking', 'allowed rows=1', $q$update public.orders set status = 'shipped', shipping_tracking_code = 'BR123456789BR' where id = '00000000-0000-0000-0000-0000000000d1'$q$);
 select pg_temp.try('admin: cancel shipped order', 'blocked', $q$update public.orders set status = 'canceled' where id = '00000000-0000-0000-0000-0000000000d1'$q$);
+select pg_temp.try('admin: local delivery leaves without tracking', 'allowed rows=1', $q$update public.orders set status = 'shipped' where id = '00000000-0000-0000-0000-0000000000d3'$q$);
+select pg_temp.try('admin: turn local order into carrier', 'blocked', $q$update public.orders set shipping_method = 'standard' where id = '00000000-0000-0000-0000-0000000000d3'$q$);
 reset role;
 
 -- Account deletion (LGPD): the user and personal data go, nothing else ---------------------
@@ -192,6 +213,10 @@ select pg_temp.val('audit rows for admin category insert', '1', $q$select count(
 update public.store_settings set pix_discount_percent = 5, free_shipping_threshold_cents = null, max_installments = 6, min_installment_cents = 3000;
 select pg_temp.try('settings: more interest-free installments than the maximum', 'blocked', 'update public.store_settings set interest_free_installments = 7');
 update public.shipping_rates set price_cents = 1990 where region = 'SE';
+update public.store_settings set origin_zip = '01310100', local_delivery_enabled = true, local_delivery_radius_km = 25,
+  local_delivery_price_cents = 1500, pickup_enabled = true, pickup_address = 'Av. Paulista, 1000';
+select pg_temp.try('settings: local delivery without stock CEP', 'blocked', 'update public.store_settings set origin_zip = null');
+select pg_temp.try('settings: pickup without address', 'blocked', 'update public.store_settings set pickup_address = null');
 insert into public.addresses (id, user_id, recipient_name, zip_code, street, number, district, city, state) values
   ('00000000-0000-0000-0000-0000000000e3', '33333333-3333-3333-3333-333333333333', 'Outro', '01001000', 'Rua B', '2', 'Centro', 'São Paulo', 'SP');
 create function pg_temp.cart(qty int, variant text default 'b001') returns jsonb language sql as
@@ -208,11 +233,22 @@ select pg_temp.val('quote: more than stock', 'insufficient_stock', $q$select pub
 select pg_temp.val('quote: someone else''s address', 'address_not_found', $q$select public.quote_order(pg_temp.cart(1), '00000000-0000-0000-0000-0000000000e3', 'pix') #>> '{problems,0,problem}'$q$);
 select pg_temp.try('quote: duplicated variant', 'blocked', $q$select public.quote_order(pg_temp.cart(1) || pg_temp.cart(1), null, 'pix')$q$);
 select pg_temp.try('quote: zero quantity', 'blocked', $q$select public.quote_order(pg_temp.cart(0), null, 'pix')$q$);
-select pg_temp.try('customer: call private.price_order', 'blocked', $q$select private.price_order(auth.uid(), pg_temp.cart(1), null, 'pix', null)$q$);
+select pg_temp.try('customer: call private.price_order', 'blocked', $q$select private.price_order(auth.uid(), pg_temp.cart(1), null, 'pix', null, 'standard')$q$);
+select pg_temp.try('customer: call private.shipping_options', 'blocked', $q$select private.shipping_options('01001000', 'SP', 0)$q$);
+select pg_temp.val('quote: options near the stock', 'standard,local,pickup', $q$select string_agg(o ->> 'method', ',') from jsonb_array_elements(public.quote_order(pg_temp.cart(1), (select id from public.addresses limit 1), 'pix') -> 'shipping_options') o$q$);
+select pg_temp.val('quote: local delivery', '3210', $q$select public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', 'SEGREDO10', 'local') ->> 'total_cents'$q$);
+select pg_temp.val('quote: pickup is free', '1710', $q$select public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', 'SEGREDO10', 'pickup') ->> 'total_cents'$q$);
+select pg_temp.val('estimate: another state gets carrier only', 'standard', $q$select string_agg(o ->> 'method', ',') from jsonb_array_elements(public.estimate_shipping('20040020') -> 'options') o$q$);
+reset role;
+update public.store_settings set local_delivery_radius_km = 1;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+select pg_temp.val('quote: local delivery out of range', 'shipping_unavailable', $q$select public.quote_order(pg_temp.cart(1), (select id from public.addresses limit 1), 'pix', null, 'local') #>> '{problems,0,problem}'$q$);
 select pg_temp.try('order without CPF', 'blocked', $q$select public.create_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', 'SEGREDO10')$q$);
 select pg_temp.try('customer: save CPF', 'allowed rows=1', $q$update public.profiles set document = '52998224725' where id = auth.uid()$q$);
 select pg_temp.try('order over stock', 'blocked', $q$select public.create_order(pg_temp.cart(6), (select id from public.addresses limit 1), 'pix')$q$);
 select pg_temp.try('order with someone else''s address', 'blocked', $q$select public.create_order(pg_temp.cart(1), '00000000-0000-0000-0000-0000000000e3', 'pix')$q$);
+select pg_temp.try('order: local delivery out of range', 'blocked', $q$select public.create_order(pg_temp.cart(1), (select id from public.addresses limit 1), 'pix', null, 'local')$q$);
 select pg_temp.try('create order (pix + coupon)', 'allowed rows=1', $q$select public.create_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', 'SEGREDO10')$q$);
 select pg_temp.val('order amounts', '2000/200/90/1990/3700', $q$select concat_ws('/', subtotal_cents, discount_cents, payment_discount_cents, shipping_cents, total_cents) from public.orders where status = 'pending_payment'$q$);
 select pg_temp.try('customer: record payment', 'blocked', $q$select public.record_payment(id, 'x', 'approved', null, 'pix', 1, total_cents, '{}') from public.orders$q$);
