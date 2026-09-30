@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   cardRejectionMessage,
-  mpDate,
-  mpPaymentSchema,
+  isoDuration,
+  mpOrderSchema,
   splitName,
   toPaymentRecord,
   verifyWebhookSignature,
@@ -16,56 +16,59 @@ function sign(manifest: string, secret = "segredo-do-webhook") {
   return createHmac("sha256", secret).update(manifest).digest("hex");
 }
 
+function mpOrder(status: string, statusDetail: string, method: Record<string, unknown>, extra = {}) {
+  return mpOrderSchema.parse({
+    id: "ORD01JP84C939T20S0P1DN382FQ6K",
+    external_reference: ORDER,
+    total_amount: "37.90",
+    payer: { email: "cliente@example.com", identification: { number: "52998224725" } },
+    transactions: {
+      payments: [
+        { id: "PAY01", status, status_detail: statusDetail, amount: "37.90", payment_method: method, ...extra },
+      ],
+    },
+  });
+}
+
 describe("verifyWebhookSignature", () => {
   const secret = "segredo-do-webhook";
-  const v1 = sign("id:123456;request-id:req-1;ts:1704908010;");
+  const v1 = sign("id:ord01abc;request-id:req-1;ts:1742505638683;");
+  const base = { signature: `ts=1742505638683,v1=${v1}`, requestId: "req-1", dataId: "ORD01ABC", secret };
 
-  it("accepts the signature Mercado Pago computes", () => {
-    expect(
-      verifyWebhookSignature({ signature: `ts=1704908010,v1=${v1}`, requestId: "req-1", dataId: "123456", secret }),
-    ).toBe(true);
+  it("accepts the signature Mercado Pago computes (order ids are lowercased)", () => {
+    expect(verifyWebhookSignature(base)).toBe(true);
   });
 
   it("rejects a wrong secret, a tampered id or a replayed timestamp", () => {
-    const base = { signature: `ts=1704908010,v1=${v1}`, requestId: "req-1", dataId: "123456", secret };
     expect(verifyWebhookSignature({ ...base, secret: "outro-segredo-qualquer" })).toBe(false);
-    expect(verifyWebhookSignature({ ...base, dataId: "999999" })).toBe(false);
-    expect(verifyWebhookSignature({ ...base, signature: `ts=1704908011,v1=${v1}` })).toBe(false);
+    expect(verifyWebhookSignature({ ...base, dataId: "ORD01XYZ" })).toBe(false);
+    expect(verifyWebhookSignature({ ...base, signature: `ts=1742505638684,v1=${v1}` })).toBe(false);
   });
 
   it("rejects missing or malformed headers", () => {
-    const base = { requestId: "req-1", dataId: "123456", secret };
     expect(verifyWebhookSignature({ ...base, signature: null })).toBe(false);
-    expect(verifyWebhookSignature({ ...base, signature: "ts=1704908010" })).toBe(false);
+    expect(verifyWebhookSignature({ ...base, signature: "ts=1742505638683" })).toBe(false);
     expect(verifyWebhookSignature({ ...base, signature: "ts=abc,v1=zz" })).toBe(false);
   });
 
-  it("lowercases alphanumeric ids and leaves absent parts out of the manifest", () => {
+  it("leaves absent parts out of the manifest", () => {
     const signature = `ts=1,v1=${sign("id:ord01abc;ts:1;")}`;
-    expect(verifyWebhookSignature({ signature, requestId: null, dataId: "ORD01ABC", secret })).toBe(true);
+    expect(verifyWebhookSignature({ ...base, signature, requestId: null })).toBe(true);
   });
 });
 
 describe("toPaymentRecord", () => {
-  const pix = mpPaymentSchema.parse({
-    id: 5466310457,
-    status: "pending",
-    status_detail: "pending_waiting_transfer",
-    payment_type_id: "bank_transfer",
-    payment_method_id: "pix",
-    transaction_amount: 37.9,
-    currency_id: "BRL",
-    installments: 1,
-    external_reference: ORDER,
-    date_of_expiration: "2026-09-30T15:00:00.000-03:00",
-    point_of_interaction: { transaction_data: { qr_code: "000201...", qr_code_base64: "iVBORw0KGgo=" } },
-    payer: { email: "cliente@example.com", identification: { number: "52998224725" } },
-  });
+  const pix = mpOrder(
+    "action_required",
+    "waiting_transfer",
+    { id: "pix", type: "bank_transfer", qr_code: "000201...", qr_code_base64: "iVBORw0KGgo=" },
+    { date_of_expiration: "2026-09-30T15:00:00.000-03:00" },
+  );
 
-  it("maps a pending Pix to record_payment arguments, in cents", () => {
+  it("maps a waiting Pix to record_payment arguments, in cents", () => {
     expect(toPaymentRecord(pix)).toMatchObject({
       p_order_id: ORDER,
-      p_provider_payment_id: "5466310457",
+      p_provider_payment_id: "ORD01JP84C939T20S0P1DN382FQ6K",
       p_status: "pending",
       p_method: "pix",
       p_amount_cents: 3790,
@@ -78,29 +81,45 @@ describe("toPaymentRecord", () => {
     expect(JSON.stringify(toPaymentRecord(pix))).not.toContain("52998224725");
   });
 
-  it("ignores payments that are not ours", () => {
+  it("ignores orders that are not ours", () => {
     expect(toPaymentRecord({ ...pix, external_reference: "pedido-123" })).toBeNull();
-    expect(toPaymentRecord({ ...pix, currency_id: "USD" })).toBeNull();
   });
 
-  it("maps boleto and card types and drops non-https links", () => {
-    const boleto = mpPaymentSchema.parse({
-      ...pix,
-      payment_type_id: "ticket",
-      transaction_details: { external_resource_url: "javascript:alert(1)", digitable_line: "23790.00000" },
+  it("translates Orders statuses", () => {
+    const card = { id: "master", type: "credit_card", installments: 3 };
+    expect(toPaymentRecord(mpOrder("processed", "accredited", card))).toMatchObject({
+      p_status: "approved",
+      p_method: "credit_card",
+      p_installments: 3,
     });
-    expect(toPaymentRecord(boleto)).toMatchObject({
+    expect(toPaymentRecord(mpOrder("failed", "insufficient_amount", card))?.p_status).toBe("rejected");
+    expect(toPaymentRecord(mpOrder("expired", "expired", card))?.p_status).toBe("cancelled");
+    expect(toPaymentRecord(mpOrder("charged_back", "settled", card))?.p_status).toBe("charged_back");
+    expect(toPaymentRecord(mpOrder("charged_back", "in_process", card))?.p_status).toBe("in_mediation");
+    expect(toPaymentRecord(mpOrder("processed", "accredited", { ...card, type: "debit_card" }))?.p_method).toBeNull();
+  });
+
+  it("keeps the stock reserved while a card is under review", () => {
+    const record = toPaymentRecord(mpOrder("processing", "in_review", { id: "visa", type: "credit_card" }));
+    expect(record?.p_status).toBe("pending");
+    expect(Date.parse(record!.p_expires_at!)).toBeGreaterThan(Date.now() + 86_400_000);
+  });
+
+  it("keeps the boleto link and line, and drops non-https links", () => {
+    const boleto = { id: "boleto", type: "ticket", ticket_url: "https://mp.com/b/1", digitable_line: "23790.00000" };
+    expect(toPaymentRecord(mpOrder("action_required", "waiting_payment", boleto))).toMatchObject({
       p_method: "boleto",
-      p_raw: { boletoUrl: null, barcode: "23790.00000" },
+      p_raw: { boletoUrl: "https://mp.com/b/1", barcode: "23790.00000" },
     });
-    expect(toPaymentRecord({ ...pix, payment_type_id: "credit_card" })?.p_method).toBe("credit_card");
-    expect(toPaymentRecord({ ...pix, payment_type_id: "debit_card" })?.p_method).toBeNull();
+    const unsafe = mpOrder("action_required", "waiting_payment", { ...boleto, ticket_url: "javascript:alert(1)" });
+    expect(toPaymentRecord(unsafe)?.p_raw.boletoUrl).toBeNull();
   });
 });
 
 describe("helpers", () => {
-  it("formats dates in Brasília time", () => {
-    expect(mpDate(new Date("2026-09-30T18:00:00Z"))).toBe("2026-09-30T15:00:00.000-03:00");
+  it("writes the time left as an ISO 8601 duration", () => {
+    expect(isoDuration(59 * 60_000 + 30_000)).toBe("PT0H59M");
+    expect(isoDuration(3 * 86_400_000 - 60_000)).toBe("P2DT23H59M");
   });
 
   it("splits names for the payer", () => {
@@ -109,8 +128,8 @@ describe("helpers", () => {
   });
 
   it("explains card rejections without leaking codes", () => {
-    expect(cardRejectionMessage("cc_rejected_insufficient_amount")).toBe("O cartão não tem limite suficiente.");
-    expect(cardRejectionMessage("cc_rejected_high_risk")).toContain("não foi aprovado");
+    expect(cardRejectionMessage("insufficient_amount")).toBe("O cartão não tem limite suficiente.");
+    expect(cardRejectionMessage("high_risk")).toContain("não foi aprovado");
     expect(cardRejectionMessage(null)).toContain("não foi aprovado");
   });
 });
