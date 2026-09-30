@@ -9,3 +9,8 @@ export const ORDER_STATUS_LABEL: Record<Enums<"order_status">, string> = {
   canceled: "Cancelado",
   refunded: "Reembolsado",
 };
+
+/** Waiting for payment and still within the payment deadline. */
+export function isPayable(order: { status: Enums<"order_status">; expires_at: string | null }): boolean {
+  return order.status === "pending_payment" && !!order.expires_at && Date.parse(order.expires_at) > Date.now();
+}
