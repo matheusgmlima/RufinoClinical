@@ -1,3 +1,4 @@
+import { User } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -27,6 +28,13 @@ export function Header({ categories, settings }: { categories: Category[]; setti
             <NavLinks categories={categories} />
           </Suspense>
           <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/conta"
+              aria-label="Minha conta"
+              className="inline-flex size-11 items-center justify-center rounded-full text-ink transition hover:bg-ink/5"
+            >
+              <User size={24} aria-hidden="true" />
+            </Link>
             <CartButton />
             <MobileMenu categories={categories} />
           </div>
