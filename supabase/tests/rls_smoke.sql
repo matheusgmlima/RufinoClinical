@@ -66,6 +66,7 @@ select pg_temp.try('anon: call is_admin', 'allowed rows=1', 'select private.is_a
 select pg_temp.try('anon: read shipping rates', 'allowed rows=5', 'select * from public.shipping_rates');
 select pg_temp.try('anon: quote order', 'blocked', $q$select public.quote_order('[]', null, 'pix')$q$);
 select pg_temp.try('anon: create order', 'blocked', $q$select public.create_order('[]', null, 'pix')$q$);
+select pg_temp.try('anon: admin status', 'blocked', 'select public.admin_status()');
 reset role;
 
 -- Customer ------------------------------------------------------------------------
@@ -86,6 +87,8 @@ select pg_temp.try('customer: insert category', 'blocked', $q$insert into public
 select pg_temp.try('customer: read coupons', 'allowed rows=0', 'select * from public.coupons');
 select pg_temp.try('customer: read audit log', 'allowed rows=0', 'select * from public.audit_log');
 select pg_temp.try('customer: update settings', 'allowed rows=0', 'update public.store_settings set pix_discount_percent = 30');
+select pg_temp.val('customer: admin status', 'none', 'select public.admin_status()');
+select pg_temp.try('customer: adjust stock', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', 5)$q$);
 reset role;
 
 set local role authenticated;
@@ -105,6 +108,8 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated","aal":"aal1","app_metadata":{}}';
 select pg_temp.try('admin aal1: insert category', 'blocked', $q$insert into public.categories (slug, name) values ('sem-mfa', 'Sem MFA')$q$);
 select pg_temp.val('admin aal1: sees customer orders', '0', 'select count(*)::text from public.orders');
+select pg_temp.val('admin aal1: status asks for MFA', 'mfa_required', 'select public.admin_status()');
+select pg_temp.try('admin aal1: adjust stock', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', 1)$q$);
 reset role;
 
 -- Real admin with MFA ---------------------------------------------------------------------
@@ -120,6 +125,14 @@ select pg_temp.try('admin: cancel pending order', 'allowed rows=1', $q$update pu
 select pg_temp.val('admin: cancel sets canceled_at', 'true', $q$select (canceled_at is not null)::text from public.orders where id = '00000000-0000-0000-0000-0000000000d2'$q$);
 select pg_temp.try('admin: reopen canceled order', 'blocked', $q$update public.orders set status = 'pending_payment' where id = '00000000-0000-0000-0000-0000000000d2'$q$);
 select pg_temp.try('admin: delete audit log', 'blocked', 'delete from public.audit_log');
+select pg_temp.val('admin: status ok', 'ok', 'select public.admin_status()');
+select pg_temp.try('admin: set stock directly', 'blocked', $q$update public.product_variants set stock_quantity = 99 where sku = 'TST-1'$q$);
+select pg_temp.try('admin: edit variant price', 'allowed rows=1', $q$update public.product_variants set price_cents = 1000 where sku = 'TST-1'$q$);
+select pg_temp.val('admin: stock in', '8', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', 3)::text$q$);
+select pg_temp.val('admin: stock out', '5', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', -3)::text$q$);
+select pg_temp.try('admin: stock below zero', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', -6)$q$);
+select pg_temp.val('admin: adjustments reach the ledger', '2', $q$select count(*)::text from public.stock_movements where actor_id = auth.uid()$q$);
+select pg_temp.try('admin: edit coupon usage count', 'blocked', 'update public.coupons set redemptions_count = 0');
 reset role;
 
 -- Payment integration (service role) ---------------------------------------------------
