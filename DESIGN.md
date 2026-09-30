@@ -63,7 +63,8 @@ Contraste: `wine` sobre `cream` ≈ 11:1; `ink-muted` sobre `cream` ≈ 5.5:1. O
 ## Decisões de interface (Fase 2)
 
 - Tema único claro, por decisão de marca: creme com acento vinho, e fotos de produto funcionam melhor em fundo claro.
-- Raios: cards e painéis `rounded-2xl` (16 px), painéis de marca `rounded-[28px]`, todo controle interativo (botão, pill, stepper) totalmente arredondado.
+- Raios: cards e painéis `rounded-2xl` (16 px), painéis de marca `rounded-[28px]`, campos de formulário `rounded-xl` (12 px), botões, pills e steppers totalmente arredondados.
+- Formulários: rótulo acima, dica abaixo, erro abaixo da dica (com `role=alert`). Nunca placeholder como rótulo.
 - Tipografia da interface: Manrope. O logotipo é sempre o SVG de `public/brand` (a fonte Syncopate não é carregada no site).
 - Ícones: Phosphor, traço regular.
 - Z-index: barra de compra no celular 20, header 30, overlay 40, gaveta 50.

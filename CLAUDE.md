@@ -21,3 +21,7 @@ E-commerce de produtos para fisioterapia dermatofuncional. Next.js 16 (App Route
 - Webhooks: validar assinatura e registrar em `webhook_events` (idempotência) antes de processar.
 - Segredos só em variáveis de ambiente de servidor (`src/lib/env/server.ts`). Nada de segredo com prefixo `NEXT_PUBLIC_`.
 - CSP com nonce em `src/proxy.ts`; novos domínios externos entram em `src/lib/security/csp.ts`.
+- Login/cadastro/recuperação rodam no navegador (cliente Supabase do browser) para o rate limit do Supabase contar o IP do cliente, não o do servidor. Mensagens de erro nunca revelam se um e-mail existe.
+- Todo `next`/redirect pós-login passa por `safeNext()` (bloqueia open redirect).
+- Cookies de sessão: `capCookieOptions()` em todo writer (server, proxy, browser); a lib força 400 dias e ignora `maxAge`.
+- Server actions revalidam a sessão (`getSessionUser`) e validam entrada com Zod; RLS e grants por coluna são a segunda barreira.
