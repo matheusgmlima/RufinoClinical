@@ -18,6 +18,7 @@ Lockup: "CLINICAL" fica logo abaixo de "RUFINO", justificado letra a letra na me
 | `public/brand/simbolo.svg` | Espaços pequenos, marca d'água, selos |
 | `public/brand/icone.svg` | Favicon, app icon, avatar |
 | `*-negativo.svg` | Mesmas versões em creme, para fundo vinho |
+| `logo-email.png` | Logo horizontal em PNG 3x (777×186) para e-mails, que bloqueiam SVG |
 
 Regras:
 - Área de proteção mínima: a largura da haste do R (24 u) em todos os lados.
