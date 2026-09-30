@@ -16,10 +16,11 @@ export const metadata: Metadata = { title: "Pedido" };
 
 const ORDER_FIELDS = `id, number, status, customer_name, customer_email, customer_phone, customer_document,
   shipping_address, shipping_tracking_code, subtotal_cents, discount_cents, payment_discount_cents, shipping_cents,
-  total_cents, payment_method, installments, coupon_code, notes, gateway_payment_id, created_at, paid_at, shipped_at,
+  total_cents, payment_method, installments, coupon_code, gateway_payment_id, created_at, paid_at, shipped_at,
   delivered_at, canceled_at,
   items:order_items(product_name, variant_name, sku, quantity, unit_price_cents, total_cents),
-  payments(id, provider_payment_id, status, status_detail, method, installments, amount_cents, created_at)`;
+  payments(id, provider_payment_id, status, status_detail, method, installments, amount_cents, created_at),
+  note:order_notes(notes)`;
 
 type Address = {
   recipient_name: string;
@@ -118,7 +119,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
             <OrderActions
               orderId={order.id}
               status={order.status}
-              notes={order.notes}
+              notes={order.note?.notes ?? null}
               refundable={refundable}
               total={formatBRL(order.total_cents)}
             />

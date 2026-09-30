@@ -66,11 +66,18 @@ export async function saveOrderNotes(id: string, notes: unknown): Promise<Action
   const parsed = z.string().trim().max(500).safeParse(notes);
   if (!supabase || !orderId.safeParse(id).success) return { error: "Acesso negado. Entre de novo no painel." };
   if (!parsed.success) return { error: "Use no máximo 500 caracteres." };
-  const { error } = await supabase
-    .from("orders")
-    .update({ notes: parsed.data || null })
-    .eq("id", id);
-  if (error) return { error: "Não foi possível salvar as observações." };
+
+  // Admin-only table (order_notes): the customer can read their own order row, not these notes.
+  let failed: boolean;
+  if (!parsed.data) {
+    failed = !!(await supabase.from("order_notes").delete().eq("order_id", id)).error;
+  } else {
+    const updated = await supabase.from("order_notes").update({ notes: parsed.data }).eq("order_id", id).select("id");
+    failed =
+      !!updated.error ||
+      (!updated.data.length && !!(await supabase.from("order_notes").insert({ order_id: id, notes: parsed.data })).error);
+  }
+  if (failed) return { error: "Não foi possível salvar as observações." };
   refresh(id);
   return { notice: "Observações salvas." };
 }

@@ -10,6 +10,7 @@ type Data = Record<string, unknown> | null;
 
 export const AUDIT_TABLES = {
   orders: "Pedidos",
+  order_notes: "Observações",
   products: "Produtos",
   product_variants: "Variantes",
   product_images: "Fotos",
@@ -22,6 +23,7 @@ export type AuditTable = keyof typeof AUDIT_TABLES;
 
 const ENTITY: Record<string, string> = {
   orders: "pedido",
+  order_notes: "observação do pedido",
   products: "produto",
   product_variants: "variante",
   product_images: "foto",
@@ -129,6 +131,8 @@ export function auditHref(table: string, rowId: string | null, before: Data, aft
   switch (table) {
     case "orders":
       return rowId ? `/admin/pedidos/${rowId}` : null;
+    case "order_notes":
+      return typeof row?.order_id === "string" ? `/admin/pedidos/${row.order_id}` : null;
     case "products":
       return rowId && after ? `/admin/produtos/${rowId}` : null;
     case "product_variants":

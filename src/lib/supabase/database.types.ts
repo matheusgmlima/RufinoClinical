@@ -228,6 +228,38 @@ export type Database = {
           },
         ]
       }
+      order_notes: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string
+          order_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes: string
+          order_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string
+          order_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_notes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           canceled_at: string | null
@@ -738,6 +770,7 @@ export type Database = {
         Returns: number
       }
       admin_status: { Args: never; Returns: string }
+      delete_my_account: { Args: never; Returns: undefined }
       cancel_order: { Args: { p_order_id: string }; Returns: boolean }
       create_order: {
         Args: {
