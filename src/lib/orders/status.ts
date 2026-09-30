@@ -31,3 +31,18 @@ export const PAYMENT_STATUS_LABEL: Record<string, string> = {
 export function isPayable(order: { status: Enums<"order_status">; expires_at: string | null }): boolean {
   return order.status === "pending_payment" && !!order.expires_at && Date.parse(order.expires_at) > Date.now();
 }
+
+/**
+ * Status pill colors (admin and customer pages). Each status has its own hue so lists scan at a
+ * glance: honey waits for the customer, wine needs the team, nude is in progress, mist travels,
+ * sage is done, lilac was refunded, grey ended.
+ */
+export const ORDER_STATUS_TONE: Record<Enums<"order_status">, string> = {
+  pending_payment: "bg-honey text-honey-ink",
+  paid: "bg-wine text-cream",
+  preparing: "bg-nude text-ink",
+  shipped: "bg-mist text-mist-ink",
+  delivered: "bg-sage text-sage-ink",
+  canceled: "bg-line text-ink",
+  refunded: "bg-lilac text-lilac-ink",
+};

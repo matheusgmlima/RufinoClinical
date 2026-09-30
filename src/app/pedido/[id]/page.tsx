@@ -14,7 +14,7 @@ import { getStoreSettings } from "@/lib/catalog/queries";
 import { publicEnv } from "@/lib/env/public";
 import { formatDateTime, formatDayMonth } from "@/lib/dates";
 import { installmentPlan } from "@/lib/money";
-import { isPayable, ORDER_STATUS_LABEL } from "@/lib/orders/status";
+import { isPayable, ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from "@/lib/orders/status";
 import { cardRejectionMessage, type PaymentDisplay } from "@/lib/payments/gateway";
 import { paymentsEnabled, recheckPendingPayment } from "@/lib/payments/mercadopago";
 import type { Enums } from "@/lib/supabase/database.types";
@@ -169,7 +169,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
         <header className="space-y-2">
           <p className="text-sm text-ink-muted">Feito em {formatDateTime(order.created_at)}</p>
           <h1 className="text-4xl font-semibold tracking-tight text-ink">Pedido #{order.number}</h1>
-          <p className="inline-block rounded-full bg-blush px-3 py-1 text-xs font-semibold text-wine">
+          <p className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_TONE[order.status]}`}>
             {ORDER_STATUS_LABEL[order.status]}
           </p>
         </header>

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { ORDER_STATUS_LABEL } from "@/lib/orders/status";
+import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from "@/lib/orders/status";
 import type { Enums } from "@/lib/supabase/database.types";
 
 export function AdminHeader({ title, lead, action }: { title: string; lead?: string; action?: ReactNode }) {
@@ -15,20 +15,9 @@ export function AdminHeader({ title, lead, action }: { title: string; lead?: str
   );
 }
 
-// Orders that need someone's action stand out; finished ones fade.
-const STATUS_TONE: Record<Enums<"order_status">, string> = {
-  pending_payment: "bg-line text-ink",
-  paid: "bg-wine text-cream",
-  preparing: "bg-nude text-ink",
-  shipped: "bg-blush text-wine",
-  delivered: "bg-blush text-ink-muted",
-  canceled: "bg-line/60 text-ink-muted",
-  refunded: "bg-line/60 text-ink-muted",
-};
-
 export function StatusBadge({ status }: { status: Enums<"order_status"> }) {
   return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_TONE[status]}`}>
+    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_TONE[status]}`}>
       {ORDER_STATUS_LABEL[status]}
     </span>
   );
@@ -38,7 +27,7 @@ export function StatusBadge({ status }: { status: Enums<"order_status"> }) {
 export function ActiveBadge({ active }: { active: boolean }) {
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${active ? "bg-blush text-wine" : "bg-line/60 text-ink-muted"}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${active ? "bg-sage text-sage-ink" : "bg-line text-ink"}`}
     >
       {active ? "Na loja" : "Rascunho"}
     </span>
@@ -47,7 +36,7 @@ export function ActiveBadge({ active }: { active: boolean }) {
 
 export function Panel({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="rounded-3xl border border-line bg-white/70 p-5 lg:p-6">
+    <section className="surface p-5 lg:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         {action}

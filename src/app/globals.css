@@ -11,6 +11,18 @@
   --color-ink-muted: #6f615f;
   --color-line: #e8ddd8;
 
+  /* States (order status, visibility). Pale fill + dark text, contrast AA or better. */
+  --color-honey: #fbecd0;
+  --color-honey-ink: #6b4200;
+  --color-mist: #e2ebf4;
+  --color-mist-ink: #1d4a73;
+  --color-sage: #e1efe3;
+  --color-sage-ink: #1f5a33;
+  --color-lilac: #ece6f2;
+  --color-lilac-ink: #56407a;
+
+  --shadow-card: 0 1px 2px rgb(63 6 17 / 0.04), 0 8px 24px -12px rgb(63 6 17 / 0.12);
+
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -51,6 +63,19 @@
   @media (width >= 64rem) {
     padding-inline: 2rem;
   }
+}
+
+/* Admin panel surfaces: solid white cards that stand out from the blush work area. */
+@utility surface {
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-line);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+/* Focus ring that stays visible on wine backgrounds (admin sidebar). */
+.on-dark :focus-visible {
+  outline-color: var(--color-cream);
 }
 
 @keyframes drawer-in {

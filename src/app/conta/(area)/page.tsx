@@ -6,7 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/field";
 import { formatLongDate } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
-import { ORDER_STATUS_LABEL } from "@/lib/orders/status";
+import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from "@/lib/orders/status";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Meus pedidos" };
@@ -42,7 +42,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
                         {formatLongDate(order.created_at)} · {count} {count === 1 ? "item" : "itens"}
                       </p>
                     </div>
-                    <span className="rounded-full bg-blush px-3 py-1 text-xs font-semibold text-wine">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_TONE[order.status]}`}>
                       {ORDER_STATUS_LABEL[order.status]}
                     </span>
                   </div>
