@@ -27,9 +27,23 @@ export class MpError extends Error {
     readonly status: number,
     path: string,
     readonly orderId?: string,
+    reason = "",
   ) {
-    super(`Mercado Pago responded ${status} on ${path.split("/").slice(0, 3).join("/")}`);
+    super(`Mercado Pago responded ${status} on ${path.split("/").slice(0, 3).join("/")}${reason && `: ${reason}`}`);
   }
+}
+
+// Only the error codes and field paths are kept (e-mails and long numbers masked): enough to debug, no payer data.
+function errorReason(body: { errors?: unknown } | null) {
+  if (!Array.isArray(body?.errors)) return "";
+  return body.errors
+    .map((e: { code?: unknown; details?: unknown }) => [e?.code, ...(Array.isArray(e?.details) ? e.details : [])])
+    .flat()
+    .filter((part): part is string => typeof part === "string")
+    .join("; ")
+    .replace(/\S+@\S+/g, "[email]")
+    .replace(/\d{6,}/g, "[n]")
+    .slice(0, 400);
 }
 
 async function mp(path: string, init: { body?: unknown; idempotencyKey?: string } = {}): Promise<unknown> {
@@ -47,10 +61,11 @@ async function mp(path: string, init: { body?: unknown; idempotencyKey?: string 
   });
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    // Error bodies are never logged or returned (they can carry payer data); only an order id is kept.
-    const body = data as { id?: unknown; data?: { id?: unknown } } | null;
+    // Error bodies are never logged whole or returned (they can carry payer data).
+    const body = data as { id?: unknown; data?: { id?: unknown }; errors?: unknown } | null;
     const id = body?.id ?? body?.data?.id;
-    throw new MpError(res.status, path, typeof id === "string" && /^[A-Za-z0-9]{1,64}$/.test(id) ? id : undefined);
+    const orderId = typeof id === "string" && /^[A-Za-z0-9]{1,64}$/.test(id) ? id : undefined;
+    throw new MpError(res.status, path, orderId, errorReason(body));
   }
   return data;
 }
