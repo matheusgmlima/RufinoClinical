@@ -42,3 +42,23 @@ export function cardOffer(cents: number, terms: CardTerms): string | null {
   const count = installmentPlan(cents, terms.maxInstallments, terms.minInstallmentCents).count;
   return count > 1 ? `até ${count}x no cartão` : null;
 }
+
+/**
+ * Parses a price typed in the admin ("49,90", "1.289,90", "R$ 49,90", "49.9") into cents.
+ * Null when it is not a positive amount with at most two decimals.
+ */
+export function parseBRL(input: string): number | null {
+  let value = input.replace(/R\$|\s/g, "");
+  // A comma is the decimal separator; without one, a dot followed by 1–2 digits is too.
+  if (value.includes(",")) value = value.replace(/\./g, "").replace(",", ".");
+  else if (!/^\d+\.\d{1,2}$/.test(value)) value = value.replace(/\.(?=\d{3}(\D|$))/g, "");
+  const match = /^(\d{1,7})(?:\.(\d{1,2}))?$/.exec(value);
+  if (!match) return null;
+  const cents = Number(match[1]) * 100 + Number((match[2] ?? "0").padEnd(2, "0"));
+  return cents > 0 ? cents : null;
+}
+
+/** Cents as a form value: 4990 → "49,90". */
+export function centsToField(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}

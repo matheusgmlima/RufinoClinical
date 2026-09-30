@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cardClaim, cardOffer, formatBRL, installmentPlan, pixPriceCents } from "./money";
+import { cardClaim, cardOffer, centsToField, formatBRL, installmentPlan, parseBRL, pixPriceCents } from "./money";
 
 describe("formatBRL", () => {
   it("formats cents as Brazilian reais", () => {
@@ -47,5 +47,27 @@ describe("card terms", () => {
     expect(cardOffer(28990, buyerPays)).toBe("até 6x no cartão");
     expect(cardOffer(1990, buyerPays)).toBeNull();
     expect(cardClaim({ ...buyerPays, maxInstallments: 1 })).toBeNull();
+  });
+});
+
+describe("parseBRL", () => {
+  it("reads Brazilian and plain decimal prices", () => {
+    expect(parseBRL("49,90")).toBe(4990);
+    expect(parseBRL("R$ 1.289,90")).toBe(128990);
+    expect(parseBRL("49.9")).toBe(4990);
+    expect(parseBRL("49,9")).toBe(4990);
+    expect(parseBRL("50")).toBe(5000);
+    expect(parseBRL("1.289")).toBe(128900);
+    expect(parseBRL("0,01")).toBe(1);
+  });
+
+  it("rejects empty, zero, negative and malformed values", () => {
+    for (const bad of ["", "0", "0,00", "-10", "abc", "10,999", "1,2,3", "1e3", "99999999"]) {
+      expect(parseBRL(bad)).toBeNull();
+    }
+  });
+
+  it("round-trips with centsToField", () => {
+    for (const cents of [1, 99, 4990, 128990]) expect(parseBRL(centsToField(cents))).toBe(cents);
   });
 });

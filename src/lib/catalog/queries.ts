@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { productImageUrl } from "./images";
 import { summarize, toImages, toVariants, type ImageRow, type VariantRow } from "./shape";
+import { SLUG_PATTERN } from "./slug";
 
 // Reads go through the per-request client (publishable key + user session), so RLS only
 // returns active products and variants.
@@ -60,8 +61,6 @@ const SUMMARY_FIELDS = `
   images:product_images(storage_path, alt, position, variant_id)
 `;
 
-const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
 export const getStoreSettings = cache(async (): Promise<StoreSettings> => {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -97,7 +96,7 @@ export const getProducts = cache(
     let query = supabase.from("products").select(SUMMARY_FIELDS).eq("is_active", true).order("position");
     if (filter.featured) query = query.eq("is_featured", true);
     if (filter.categorySlug) {
-      if (!SLUG.test(filter.categorySlug)) return [];
+      if (!SLUG_PATTERN.test(filter.categorySlug)) return [];
       const { data: category } = await supabase
         .from("categories")
         .select("id")
@@ -113,7 +112,7 @@ export const getProducts = cache(
 );
 
 export const getProductBySlug = cache(async (slug: string): Promise<ProductDetail | null> => {
-  if (!SLUG.test(slug) || slug.length > 120) return null;
+  if (!SLUG_PATTERN.test(slug) || slug.length > 120) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("products")
