@@ -4,18 +4,12 @@ import Link from "next/link";
 import { LogoSymbol } from "@/components/brand/logo";
 import { ButtonLink } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/field";
+import { formatLongDate } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { ORDER_STATUS_LABEL } from "@/lib/orders/status";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Meus pedidos" };
-
-const dateFormat = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
 
 export default async function OrdersPage({ searchParams }: PageProps<"/conta">) {
   const { senha } = await searchParams;
@@ -45,7 +39,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
                     <div>
                       <p className="font-semibold text-ink">Pedido #{order.number}</p>
                       <p className="text-sm text-ink-muted">
-                        {dateFormat.format(new Date(order.created_at))} · {count} {count === 1 ? "item" : "itens"}
+                        {formatLongDate(order.created_at)} · {count} {count === 1 ? "item" : "itens"}
                       </p>
                     </div>
                     <span className="rounded-full bg-blush px-3 py-1 text-xs font-semibold text-wine">

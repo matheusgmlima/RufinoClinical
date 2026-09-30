@@ -12,6 +12,7 @@ import { FormAlert } from "@/components/ui/field";
 import { requireUser } from "@/lib/auth/session";
 import { getStoreSettings } from "@/lib/catalog/queries";
 import { publicEnv } from "@/lib/env/public";
+import { formatDateTime, formatDayMonth } from "@/lib/dates";
 import { installmentPlan } from "@/lib/money";
 import { isPayable, ORDER_STATUS_LABEL } from "@/lib/orders/status";
 import { cardRejectionMessage, type PaymentDisplay } from "@/lib/payments/gateway";
@@ -21,16 +22,6 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCep } from "@/lib/validation/br";
 
 export const metadata: Metadata = { title: "Pedido" };
-
-const zone = { timeZone: "America/Sao_Paulo" } as const;
-const dateTime = new Intl.DateTimeFormat("pt-BR", {
-  ...zone,
-  day: "2-digit",
-  month: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-const dateOnly = new Intl.DateTimeFormat("pt-BR", { ...zone, day: "2-digit", month: "2-digit" });
 
 const STATUS_NOTE: Record<Enums<"order_status">, string> = {
   pending_payment: "O prazo de pagamento terminou. O pedido será cancelado automaticamente.",
@@ -147,7 +138,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
         ) : null}
         <CopyCode code={display.qrCode} label="Copiar código Pix" />
         <p className="text-sm text-ink-muted">
-          Válido até {dateTime.format(deadline)}. A confirmação aparece aqui sozinha.
+          Válido até {formatDateTime(deadline)}. A confirmação aparece aqui sozinha.
         </p>
         <AutoRefresh seconds={5} />
       </div>
@@ -158,7 +149,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
     panel = display?.boletoUrl ? (
       <div className="space-y-5">
         <div>
-          <h2 className="text-lg font-semibold text-ink">Pague o boleto até {dateOnly.format(deadline)}</h2>
+          <h2 className="text-lg font-semibold text-ink">Pague o boleto até {formatDayMonth(deadline)}</h2>
           <p className="mt-1 text-sm text-ink-muted">A confirmação pode levar até 3 dias úteis após o pagamento.</p>
         </div>
         <a href={display.boletoUrl} target="_blank" rel="noopener noreferrer" className={buttonClass()}>
@@ -176,7 +167,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
     <div className="container-page grid gap-10 py-10 lg:grid-cols-12 lg:py-14">
       <div className="space-y-8 lg:col-span-7">
         <header className="space-y-2">
-          <p className="text-sm text-ink-muted">Feito em {dateTime.format(new Date(order.created_at))}</p>
+          <p className="text-sm text-ink-muted">Feito em {formatDateTime(order.created_at)}</p>
           <h1 className="text-4xl font-semibold tracking-tight text-ink">Pedido #{order.number}</h1>
           <p className="inline-block rounded-full bg-blush px-3 py-1 text-xs font-semibold text-wine">
             {ORDER_STATUS_LABEL[order.status]}
