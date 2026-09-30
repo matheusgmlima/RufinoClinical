@@ -92,6 +92,21 @@ export async function recordPayment(order: MpOrder): Promise<string> {
   return data;
 }
 
+/**
+ * Safety net for a lost or late webhook: while its order page is open, a pending charge is re-read
+ * from the gateway at most every 30 s (record_payment bumps updated_at). True when it ran.
+ */
+export async function recheckPendingPayment(payment?: {
+  status: string;
+  provider_payment_id: string;
+  updated_at: string;
+}): Promise<boolean> {
+  if (payment?.status !== "pending" || !paymentsEnabled()) return false;
+  if (Date.now() - Date.parse(payment.updated_at) < 30_000) return false;
+  await recordPayment(await getMpOrder(payment.provider_payment_id));
+  return true;
+}
+
 /** Voids a Pix code or boleto still waiting for payment. 409: already paid, canceled or expired. */
 export async function cancelMpOrder(id: string) {
   await mp(`/v1/orders/${encodeURIComponent(id)}/cancel`, { body: {}, idempotencyKey: randomUUID() }).catch((err) => {

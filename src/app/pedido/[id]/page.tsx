@@ -15,7 +15,7 @@ import { publicEnv } from "@/lib/env/public";
 import { installmentPlan } from "@/lib/money";
 import { isPayable, ORDER_STATUS_LABEL } from "@/lib/orders/status";
 import { cardRejectionMessage, type PaymentDisplay } from "@/lib/payments/gateway";
-import { paymentsEnabled } from "@/lib/payments/mercadopago";
+import { paymentsEnabled, recheckPendingPayment } from "@/lib/payments/mercadopago";
 import type { Enums } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { formatCep } from "@/lib/validation/br";
@@ -46,7 +46,7 @@ const ORDER_FIELDS = `id, number, status, payment_method, subtotal_cents, discou
   shipping_cents, total_cents, coupon_code, expires_at, created_at, shipping_address, shipping_tracking_code,
   customer_email, customer_document,
   items:order_items(product_name, variant_name, quantity, total_cents),
-  payments(status, status_detail, raw, created_at)`;
+  payments(provider_payment_id, status, status_detail, raw, created_at, updated_at)`;
 
 type Address = {
   recipient_name: string;
@@ -65,14 +65,19 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
   await requireUser(`/pedido/${id}`);
 
   const supabase = await createClient();
-  const [{ data: order }, settings] = await Promise.all([
-    supabase.from("orders").select(ORDER_FIELDS).eq("id", id).maybeSingle(),
-    getStoreSettings(),
-  ]);
+  const load = () => supabase.from("orders").select(ORDER_FIELDS).eq("id", id).maybeSingle();
+  const [{ data: found }, settings] = await Promise.all([load(), getStoreSettings()]);
   // RLS: another customer's order is indistinguishable from a missing one.
-  if (!order) notFound();
+  if (!found) notFound();
 
-  const payment = order.payments.toSorted((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const latest = (payments: typeof found.payments) =>
+    payments.toSorted((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const rechecked = await recheckPendingPayment(latest(found.payments)).catch((err) => {
+    console.error("payment recheck failed", err);
+    return false;
+  });
+  const order = (rechecked && (await load()).data) || found;
+  const payment = latest(order.payments);
   const display = payment?.status === "pending" ? (payment.raw as PaymentDisplay | null) : null;
   const open = isPayable(order);
   const deadline = new Date(display?.expiresAt ?? order.expires_at ?? order.created_at);
