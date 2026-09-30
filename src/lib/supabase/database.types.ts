@@ -276,7 +276,6 @@ export type Database = {
           gateway_payment_id: string | null
           id: string
           installments: number | null
-          notes: string | null
           number: number
           paid_at: string | null
           payment_discount_cents: number
@@ -308,7 +307,6 @@ export type Database = {
           gateway_payment_id?: string | null
           id?: string
           installments?: number | null
-          notes?: string | null
           number?: never
           paid_at?: string | null
           payment_discount_cents?: number
@@ -340,7 +338,6 @@ export type Database = {
           gateway_payment_id?: string | null
           id?: string
           installments?: number | null
-          notes?: string | null
           number?: never
           paid_at?: string | null
           payment_discount_cents?: number
