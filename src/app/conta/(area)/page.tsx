@@ -10,7 +10,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Meus pedidos" };
 
-const dateFormat = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+const dateFormat = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
 
 export default async function OrdersPage({ searchParams }: PageProps<"/conta">) {
   const { senha } = await searchParams;
@@ -31,22 +36,32 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
           {orders.map((order) => {
             const count = order.items.reduce((sum, item) => sum + item.quantity, 0);
             return (
-              <li key={order.id} className="rounded-2xl border border-line p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-ink">Pedido #{order.number}</p>
-                    <p className="text-sm text-ink-muted">
-                      {dateFormat.format(new Date(order.created_at))} · {count} {count === 1 ? "item" : "itens"}
-                    </p>
+              <li key={order.id}>
+                <Link
+                  href={`/pedido/${order.id}`}
+                  className="block rounded-2xl border border-line p-5 transition hover:border-wine/40"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-ink">Pedido #{order.number}</p>
+                      <p className="text-sm text-ink-muted">
+                        {dateFormat.format(new Date(order.created_at))} · {count} {count === 1 ? "item" : "itens"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-blush px-3 py-1 text-xs font-semibold text-wine">
+                      {ORDER_STATUS_LABEL[order.status]}
+                    </span>
                   </div>
-                  <span className="rounded-full bg-blush px-3 py-1 text-xs font-semibold text-wine">
-                    {ORDER_STATUS_LABEL[order.status]}
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-ink-muted">
-                  {order.items.map((item) => item.product_name).join(", ")}
-                </p>
-                <p className="mt-3 font-semibold text-ink tabular-nums">{formatBRL(order.total_cents)}</p>
+                  <p className="mt-3 text-sm text-ink-muted">
+                    {order.items.map((item) => item.product_name).join(", ")}
+                  </p>
+                  <p className="mt-3 flex items-baseline justify-between gap-3">
+                    <span className="font-semibold text-ink tabular-nums">{formatBRL(order.total_cents)}</span>
+                    {order.status === "pending_payment" ? (
+                      <span className="text-sm font-semibold text-wine">Pagar agora</span>
+                    ) : null}
+                  </p>
+                </Link>
               </li>
             );
           })}
