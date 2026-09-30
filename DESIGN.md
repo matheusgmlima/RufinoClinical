@@ -77,3 +77,11 @@ Contraste: `wine` sobre `cream` ≈ 11:1; `ink-muted` sobre `cream` ≈ 5.5:1. O
 - Resumo do pedido sempre no painel blush à direita (abaixo do formulário no celular). Valores vêm do banco; o texto "Calculando..." aparece enquanto a cotação atualiza.
 - Página do pedido: um único bloco de pagamento conforme o estado (Pix com QR e copia e cola, boleto com link e linha digitável, cartão com o formulário do Mercado Pago estilizado com os tokens da marca, ou a mensagem do status).
 - Horários sempre no fuso de Brasília.
+
+## Decisões de interface (Fase 4, painel)
+
+- Painel com mais contraste que a loja, por ser ferramenta de trabalho: menu lateral `wine-deep` com logo negativo e item ativo em creme; área de trabalho em blush 70%; cards e painéis brancos sólidos com sombra leve (`surface`, `shadow-card`).
+- Cores de estado (tokens `honey`, `mist`, `sage`, `lilac`, cada um com um `-ink` para o texto): aguardando pagamento em mel, pago em vinho (pede ação da equipe), em separação em nude, enviado em azul névoa, entregue em sálvia, reembolsado em lilás, cancelado em cinza (`line`). As mesmas cores aparecem na área do cliente. Na loja, `sage` também marca "Na loja"/"Valendo".
+- "A separar" vira card vinho quando há pedido esperando; os outros cards têm ícone em círculo blush.
+- Foco visível em fundo vinho usa contorno creme (classe `on-dark`).
+- Campos de formulário brancos sólidos, para aparecerem sobre blush e creme.
