@@ -140,6 +140,11 @@ select pg_temp.try('admin: add image', 'allowed rows=1', $q$insert into public.p
 select pg_temp.try('admin: image with variant of another product', 'blocked', $q$insert into public.product_images (product_id, variant_id, storage_path, alt) values ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-00000000b002', 'products/a001/outra.jpg', 'Outra')$q$);
 select pg_temp.try('admin: repoint image file', 'blocked', $q$update public.product_images set storage_path = 'products/x.jpg'$q$);
 select pg_temp.try('admin: edit image alt', 'allowed rows=1', $q$update public.product_images set alt = 'Foto nova', position = 1$q$);
+select pg_temp.try('admin: edit settings', 'allowed rows=1', 'update public.store_settings set pix_discount_percent = 7');
+select pg_temp.try('admin: change settings row key', 'blocked', 'update public.store_settings set id = false');
+select pg_temp.try('admin: backdate settings', 'blocked', $q$update public.store_settings set updated_at = now() - interval '1 year'$q$);
+select pg_temp.try('admin: create coupon', 'allowed rows=1', $q$insert into public.coupons (code, discount_type, discount_value, ends_at) values ('PAINEL5', 'fixed', 500, now() + interval '1 day')$q$);
+select pg_temp.try('admin: coupon with preset usage', 'blocked', $q$insert into public.coupons (code, discount_type, discount_value, redemptions_count) values ('PAINEL6', 'fixed', 500, 3)$q$);
 reset role;
 
 -- Payment integration (service role) ---------------------------------------------------
