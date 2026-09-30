@@ -2,6 +2,7 @@ import { SignOut } from "@phosphor-icons/react/ssr";
 
 import { AccountNav } from "@/components/account/account-nav";
 import { signOut } from "@/app/actions/auth";
+import { getAdminStatus } from "@/lib/auth/admin";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,6 +11,8 @@ export default async function AccountLayout({ children }: LayoutProps<"/conta">)
   const supabase = await createClient();
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
   const firstName = profile?.full_name?.split(" ")[0] ?? "";
+  // Admins (with or without the 2FA step done) get a link to the panel.
+  const admin = (await getAdminStatus()) !== "none";
 
   return (
     <div className="container-page grid flex-1 gap-8 py-10 lg:grid-cols-12 lg:gap-12 lg:py-16">
@@ -18,7 +21,7 @@ export default async function AccountLayout({ children }: LayoutProps<"/conta">)
           <p className="text-sm text-ink-muted">Minha conta</p>
           <p className="mt-1 truncate text-xl font-semibold text-ink">{firstName ? `Olá, ${firstName}` : user.email}</p>
         </div>
-        <AccountNav />
+        <AccountNav admin={admin} />
         <form action={signOut} className="hidden lg:block">
           <button
             type="submit"

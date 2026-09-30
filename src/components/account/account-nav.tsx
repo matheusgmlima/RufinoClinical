@@ -1,5 +1,6 @@
 "use client";
 
+import { Storefront } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,7 +10,8 @@ const links = [
   { href: "/conta/enderecos", label: "Endereços" },
 ];
 
-export function AccountNav() {
+/** Account sections; the team also gets a way into the store panel (it asks for the 2FA code). */
+export function AccountNav({ admin = false }: { admin?: boolean }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Minha conta" className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
@@ -30,6 +32,17 @@ export function AccountNav() {
             </li>
           );
         })}
+        {admin ? (
+          <li className="lg:mt-3 lg:border-t lg:border-line lg:pt-3">
+            <Link
+              href="/admin"
+              className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-wine/25 px-5 text-sm font-semibold text-wine transition hover:border-wine hover:bg-wine/5 lg:flex lg:w-full"
+            >
+              <Storefront size={18} aria-hidden="true" />
+              Painel da loja
+            </Link>
+          </li>
+        ) : null}
       </ul>
     </nav>
   );
