@@ -67,7 +67,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                 href={href({ status: value, q })}
                 aria-current={value === status ? "page" : undefined}
                 className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium ${
-                  value === status ? "bg-wine text-cream" : "border border-line text-ink hover:border-wine/40"
+                  value === status ? "bg-wine text-cream" : "border border-line bg-white text-ink hover:border-wine/40"
                 }`}
               >
                 {value ? ORDER_STATUS_LABEL[value] : "Todos"}
@@ -97,7 +97,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
       </Form>
 
       {orders?.length ? (
-        <ul className="divide-y divide-line rounded-3xl border border-line bg-white/70 px-5">
+        <ul className="divide-y divide-line surface px-5">
           {orders.map((order) => (
             <li key={order.id}>
               <Link
@@ -121,7 +121,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
           ))}
         </ul>
       ) : (
-        <p className="rounded-3xl border border-line bg-white/70 p-8 text-center text-ink-muted">
+        <p className="surface p-8 text-center text-ink-muted">
           Nenhum pedido encontrado.
         </p>
       )}

@@ -21,14 +21,15 @@ type Coupon = {
 };
 
 /** Whether the checkout accepts the coupon right now, and why not. */
-function couponState(coupon: Coupon, now = Date.now()): { label: string; live: boolean } {
-  if (!coupon.is_active) return { label: "Inativo", live: false };
-  if (coupon.starts_at && Date.parse(coupon.starts_at) > now) return { label: "Agendado", live: false };
-  if (coupon.ends_at && Date.parse(coupon.ends_at) <= now) return { label: "Encerrado", live: false };
+function couponState(coupon: Coupon, now = Date.now()): { label: string; tone: string } {
+  const ended = "bg-line text-ink";
+  if (!coupon.is_active) return { label: "Inativo", tone: ended };
+  if (coupon.starts_at && Date.parse(coupon.starts_at) > now) return { label: "Agendado", tone: "bg-mist text-mist-ink" };
+  if (coupon.ends_at && Date.parse(coupon.ends_at) <= now) return { label: "Encerrado", tone: ended };
   if (coupon.max_redemptions !== null && coupon.redemptions_count >= coupon.max_redemptions) {
-    return { label: "Esgotado", live: false };
+    return { label: "Esgotado", tone: ended };
   }
-  return { label: "Valendo", live: true };
+  return { label: "Valendo", tone: "bg-sage text-sage-ink" };
 }
 
 export default async function AdminCouponsPage() {
@@ -50,7 +51,7 @@ export default async function AdminCouponsPage() {
               {coupons.map(({ redemptions_count, ...coupon }) => {
                 const state = couponState({ ...coupon, redemptions_count });
                 return (
-                  <li key={coupon.id} className="rounded-3xl border border-line bg-white/70 p-5">
+                  <li key={coupon.id} className="surface p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h2 className="font-semibold tracking-wide">{coupon.code}</h2>
@@ -68,7 +69,7 @@ export default async function AdminCouponsPage() {
                         </p>
                       </div>
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${state.live ? "bg-blush text-wine" : "bg-line/60 text-ink-muted"}`}
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${state.tone}`}
                       >
                         {state.label}
                       </span>
@@ -95,7 +96,7 @@ export default async function AdminCouponsPage() {
               })}
             </ul>
           ) : (
-            <p className="rounded-3xl border border-line bg-white/70 p-8 text-center text-ink-muted">
+            <p className="surface p-8 text-center text-ink-muted">
               Nenhum cupom ainda.
             </p>
           )}

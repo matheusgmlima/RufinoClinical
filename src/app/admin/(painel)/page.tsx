@@ -1,3 +1,5 @@
+import type { Icon } from "@phosphor-icons/react";
+import { ChartLineUp, Clock, Package, Tray } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -37,18 +39,22 @@ export default async function AdminHomePage() {
   ]);
   const sales = month.data ?? [];
 
-  const cards = [
-    { label: "A separar", value: String(toShip.count ?? 0), href: "/admin/pedidos?status=paid" },
-    { label: "Em separação", value: String(preparing.count ?? 0), href: "/admin/pedidos?status=preparing" },
+  const toShipCount = toShip.count ?? 0;
+  const cards: { label: string; value: string; href: string; icon: Icon; urgent?: boolean }[] = [
+    // Paid orders waiting to be picked are the one thing that needs the team: they stand out.
+    { label: "A separar", value: String(toShipCount), href: "/admin/pedidos?status=paid", icon: Tray, urgent: toShipCount > 0 },
+    { label: "Em separação", value: String(preparing.count ?? 0), href: "/admin/pedidos?status=preparing", icon: Package },
     {
       label: "Aguardando pagamento",
       value: String(awaiting.count ?? 0),
       href: "/admin/pedidos?status=pending_payment",
+      icon: Clock,
     },
     {
       label: `Vendas no mês · ${sales.length} ${sales.length === 1 ? "pedido" : "pedidos"}`,
       value: formatBRL(sales.reduce((sum, order) => sum + order.total_cents, 0)),
       href: "/admin/pedidos",
+      icon: ChartLineUp,
     },
   ];
 
@@ -56,16 +62,27 @@ export default async function AdminHomePage() {
     <>
       <AdminHeader title="Visão geral" />
       <ul className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {cards.map((card) => (
+        {cards.map(({ icon: CardIcon, ...card }) => (
           <li key={card.label}>
             <Link
               href={card.href}
-              className="block rounded-3xl border border-line bg-white/70 p-4 transition hover:border-wine/40 sm:p-5"
+              className={`flex h-full flex-col gap-3 rounded-3xl p-4 transition sm:p-5 ${
+                card.urgent
+                  ? "bg-wine text-cream shadow-card hover:bg-wine-deep"
+                  : "surface hover:border-wine/40"
+              }`}
             >
-              <p className="text-sm text-ink-muted">{card.label}</p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-ink tabular-nums sm:text-3xl">
-                {card.value}
-              </p>
+              <span
+                className={`flex size-9 items-center justify-center rounded-full ${card.urgent ? "bg-cream/15" : "bg-blush text-wine"}`}
+              >
+                <CardIcon size={20} aria-hidden="true" />
+              </span>
+              <span>
+                <span className={`block text-sm ${card.urgent ? "text-cream/85" : "text-ink-muted"}`}>{card.label}</span>
+                <span className="mt-1 block text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
+                  {card.value}
+                </span>
+              </span>
             </Link>
           </li>
         ))}

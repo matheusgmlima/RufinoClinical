@@ -36,7 +36,7 @@ export function AdminNav() {
                 href={href}
                 aria-current={current ? "page" : undefined}
                 className={`flex h-10 items-center gap-3 whitespace-nowrap rounded-full px-4 text-sm font-medium transition ${
-                  current ? "bg-wine text-cream" : "text-ink hover:bg-blush"
+                  current ? "bg-cream text-wine-deep" : "text-cream/85 hover:bg-cream/10 hover:text-cream"
                 }`}
               >
                 <Icon size={18} aria-hidden="true" />

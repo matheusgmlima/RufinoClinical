@@ -26,7 +26,7 @@ export default async function AdminCategoriesPage() {
               {categories.map(({ products, ...category }) => {
                 const count = products[0]?.count ?? 0;
                 return (
-                  <li key={category.id} className="rounded-3xl border border-line bg-white/70 p-5">
+                  <li key={category.id} className="surface p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
                         <h2 className="font-semibold">{category.name}</h2>
@@ -52,7 +52,7 @@ export default async function AdminCategoriesPage() {
               })}
             </ul>
           ) : (
-            <p className="rounded-3xl border border-line bg-white/70 p-8 text-center text-ink-muted">
+            <p className="surface p-8 text-center text-ink-muted">
               Nenhuma categoria ainda.
             </p>
           )}

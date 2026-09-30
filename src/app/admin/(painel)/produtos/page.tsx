@@ -78,7 +78,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
                 href={href({ filtro: value, q })}
                 aria-current={value === filtro ? "page" : undefined}
                 className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium ${
-                  value === filtro ? "bg-wine text-cream" : "border border-line text-ink hover:border-wine/40"
+                  value === filtro ? "bg-wine text-cream" : "border border-line bg-white text-ink hover:border-wine/40"
                 }`}
               >
                 {value ? FILTERS[value] : "Todos"}
@@ -101,7 +101,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
       </Form>
 
       {products?.length ? (
-        <ul className="divide-y divide-line rounded-3xl border border-line bg-white/70 px-5">
+        <ul className="divide-y divide-line surface px-5">
           {products.map((product) => {
             const cover = product.images.toSorted((a, b) => a.position - b.position)[0];
             const active = product.variants.filter((variant) => variant.is_active);
@@ -146,7 +146,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
           })}
         </ul>
       ) : (
-        <p className="rounded-3xl border border-line bg-white/70 p-8 text-center text-ink-muted">
+        <p className="surface p-8 text-center text-ink-muted">
           Nenhum produto encontrado.
         </p>
       )}

@@ -62,7 +62,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
                 href={href({ tabela: value })}
                 aria-current={value === tabela ? "page" : undefined}
                 className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium ${
-                  value === tabela ? "bg-wine text-cream" : "border border-line text-ink hover:border-wine/40"
+                  value === tabela ? "bg-wine text-cream" : "border border-line bg-white text-ink hover:border-wine/40"
                 }`}
               >
                 {value ? AUDIT_TABLES[value] : "Tudo"}
@@ -73,7 +73,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
       </nav>
 
       {entries?.length ? (
-        <ol className="divide-y divide-line rounded-3xl border border-line bg-white/70 px-5">
+        <ol className="divide-y divide-line surface px-5">
           {entries.map((entry) => {
             const before = entry.old_data as Data;
             const after = entry.new_data as Data;
@@ -112,7 +112,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps<"/admin
           })}
         </ol>
       ) : (
-        <p className="rounded-3xl border border-line bg-white/70 p-8 text-center text-ink-muted">Nenhum registro.</p>
+        <p className="surface p-8 text-center text-ink-muted">Nenhum registro.</p>
       )}
 
       {pages > 1 ? (
