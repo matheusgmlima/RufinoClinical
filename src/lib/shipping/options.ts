@@ -26,6 +26,13 @@ export const SHIPPING_METHOD_LABEL: Record<ShippingMethod, string> = {
   pickup: "Retirar na loja",
 };
 
+// Nearby buyers see the courier first: it is what the store offers them over the carrier.
+const ORDER: Record<ShippingMethod, number> = { local: 0, pickup: 1, standard: 2 };
+
+export function sortShippingOptions(options: ShippingOption[]): ShippingOption[] {
+  return options.toSorted((a, b) => ORDER[a.method] - ORDER[b.method]);
+}
+
 /** Short tag for order lists. */
 export const SHIPPING_METHOD_SHORT: Record<ShippingMethod, string> = {
   standard: "Correios/transportadora",
@@ -47,7 +54,7 @@ export function shippingPrice(option: ShippingOption): string {
 export function shippingDetail(option: ShippingOption): string {
   switch (option.method) {
     case "local":
-      return `Pagamento confirmado até ${formatCutoff(option.cutoff ?? "16:00")} em dia útil chega no mesmo dia. Depois disso, no dia útil seguinte.`;
+      return `Chega hoje com pagamento confirmado até ${formatCutoff(option.cutoff ?? "16:00")} em dia útil. Depois disso, no dia útil seguinte.`;
     case "pickup":
       return "Avisamos quando estiver pronto para retirar.";
     default:

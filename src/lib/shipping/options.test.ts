@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { formatBRL } from "@/lib/money";
 import { orderStatusLabel } from "@/lib/orders/status";
 
-import { formatCutoff, shippingDetail, shippingOptionSchema, shippingPrice } from "./options";
+import { formatCutoff, shippingDetail, shippingOptionSchema, shippingPrice, sortShippingOptions } from "./options";
 
 describe("shipping options", () => {
   it("reads the options priced by the database", () => {
@@ -14,7 +14,8 @@ describe("shipping options", () => {
     ]);
     expect(parsed.map(shippingPrice)).toEqual([formatBRL(1990), formatBRL(1500), "Grátis"]);
     expect(shippingDetail(parsed[0])).toBe("3 a 7 dias úteis após a postagem.");
-    expect(shippingDetail(parsed[1])).toContain("até 16h em dia útil chega no mesmo dia");
+    expect(shippingDetail(parsed[1])).toContain("Chega hoje com pagamento confirmado até 16h em dia útil.");
+    expect(sortShippingOptions(parsed).map((option) => option.method)).toEqual(["local", "pickup", "standard"]);
     expect(() => shippingOptionSchema.parse({ method: "drone", price_cents: 0 })).toThrow();
   });
 

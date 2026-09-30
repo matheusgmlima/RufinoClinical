@@ -12,7 +12,13 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/field";
 import type { DeliverySettings } from "@/lib/catalog/queries";
 import { cardClaim, cardOffer, formatBRL, type CardTerms } from "@/lib/money";
-import { SHIPPING_METHOD_LABEL, shippingDetail, shippingPrice, type ShippingMethod } from "@/lib/shipping/options";
+import {
+  SHIPPING_METHOD_LABEL,
+  shippingDetail,
+  shippingPrice,
+  sortShippingOptions,
+  type ShippingMethod,
+} from "@/lib/shipping/options";
 import { formatCep, formatDocument, isValidDocument, onlyDigits } from "@/lib/validation/br";
 
 import { OrderSummary } from "./order-summary";
@@ -91,6 +97,8 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
   const [addressId, setAddressId] = useState(addresses[0]?.id);
   const [adding, setAdding] = useState(addresses.length === 0);
   const [shipping, setShipping] = useState<ShippingMethod>("standard");
+  // Until the buyer picks one, a nearby address starts on the same-day courier.
+  const picked = useRef(false);
   const [method, setMethod] = useState<Method>("pix");
   const [coupon, setCoupon] = useState("");
   const [couponDraft, setCouponDraft] = useState("");
@@ -117,7 +125,9 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
       setQuote(result);
       // Another address may not have the chosen option (local delivery is by distance): fall back.
       const options = result?.shipping_options ?? [];
-      if (options.length && !options.some((option) => option.method === shipping)) setShipping(options[0].method);
+      const offers = (method: ShippingMethod) => options.some((option) => option.method === method);
+      if (!picked.current && offers("local") && shipping !== "local") setShipping("local");
+      else if (options.length && !offers(shipping)) setShipping(options[0].method);
       setError(result ? null : "Não foi possível calcular o total. Verifique sua conexão e tente de novo.");
       const couponProblem = result?.problems.find((p) => p.problem.startsWith("coupon_"));
       if (couponProblem) {
@@ -206,7 +216,7 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
         {quote?.shipping_options.length ? (
           <fieldset className="space-y-3">
             <legend className="mb-4 text-lg font-semibold text-ink">Forma de entrega</legend>
-            {quote.shipping_options.map((option) => {
+            {sortShippingOptions(quote.shipping_options).map((option) => {
               const Icon = SHIPPING_ICON[option.method];
               const where =
                 option.method === "pickup" && pickup
@@ -217,7 +227,10 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
                   key={option.method}
                   name="shipping"
                   checked={option.method === shipping}
-                  onChange={() => setShipping(option.method)}
+                  onChange={() => {
+                    picked.current = true;
+                    setShipping(option.method);
+                  }}
                   icon={<Icon size={18} className="text-wine" aria-hidden="true" />}
                   title={`${SHIPPING_METHOD_LABEL[option.method]} · ${shippingPrice(option)}`}
                   detail={shippingDetail(option) + where}
