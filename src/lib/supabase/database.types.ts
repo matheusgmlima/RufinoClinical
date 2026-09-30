@@ -241,6 +241,7 @@ export type Database = {
           delivered_at: string | null
           discount_cents: number
           expires_at: string | null
+          gateway_payment_id: string | null
           id: string
           installments: number | null
           notes: string | null
@@ -272,6 +273,7 @@ export type Database = {
           delivered_at?: string | null
           discount_cents?: number
           expires_at?: string | null
+          gateway_payment_id?: string | null
           id?: string
           installments?: number | null
           notes?: string | null
@@ -303,6 +305,7 @@ export type Database = {
           delivered_at?: string | null
           discount_cents?: number
           expires_at?: string | null
+          gateway_payment_id?: string | null
           id?: string
           installments?: number | null
           notes?: string | null
@@ -593,6 +596,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_rates: {
+        Row: {
+          max_days: number
+          min_days: number
+          price_cents: number
+          region: string
+          updated_at: string
+        }
+        Insert: {
+          max_days: number
+          min_days: number
+          price_cents: number
+          region: string
+          updated_at?: string
+        }
+        Update: {
+          max_days?: number
+          min_days?: number
+          price_cents?: number
+          region?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           actor_id: string | null
@@ -703,7 +730,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cancel_order: { Args: { p_order_id: string }; Returns: boolean }
+      create_order: {
+        Args: {
+          p_address_id: string
+          p_coupon_code?: string
+          p_items: Json
+          p_payment_method: Database["public"]["Enums"]["payment_method"]
+        }
+        Returns: Json
+      }
+      quote_order: {
+        Args: {
+          p_address_id: string
+          p_coupon_code?: string
+          p_items: Json
+          p_payment_method: Database["public"]["Enums"]["payment_method"]
+        }
+        Returns: Json
+      }
+      record_payment: {
+        Args: {
+          p_amount_cents: number
+          p_expires_at?: string
+          p_installments: number
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_order_id: string
+          p_provider_payment_id: string
+          p_raw: Json
+          p_status: string
+          p_status_detail: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       discount_type: "percent" | "fixed"
