@@ -30,6 +30,7 @@ export default async function CheckoutPage() {
         defaultName={profile?.full_name ?? ""}
         needsDocument={!profile?.document}
         pixDiscountPercent={settings.pixDiscountPercent}
+        card={settings}
         enabled={paymentsEnabled()}
       />
     </div>

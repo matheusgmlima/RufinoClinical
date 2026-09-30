@@ -10,7 +10,7 @@ import { AddressForm, type AddressValues } from "@/components/account/address-fo
 import { useCart } from "@/components/cart/cart-provider";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/field";
-import { formatBRL } from "@/lib/money";
+import { cardClaim, cardOffer, formatBRL, type CardTerms } from "@/lib/money";
 import { formatCep, formatDocument, isValidDocument, onlyDigits } from "@/lib/validation/br";
 
 import { OrderSummary } from "./order-summary";
@@ -19,7 +19,7 @@ type Method = "pix" | "credit_card" | "boleto";
 
 const PAYMENT_CHOICES = [
   { value: "pix", title: "Pix", Icon: PixLogo, detail: "aprovação na hora" },
-  { value: "credit_card", title: "Cartão de crédito", Icon: CreditCard, detail: "Parcelado sem juros" },
+  { value: "credit_card", title: "Cartão de crédito", Icon: CreditCard, detail: "" },
   { value: "boleto", title: "Boleto", Icon: Barcode, detail: "Vence em 3 dias · confirmação em até 3 dias úteis" },
 ] as const;
 type Problem = CheckoutQuote["problems"][number];
@@ -28,6 +28,7 @@ type Props = {
   defaultName: string;
   needsDocument: boolean;
   pixDiscountPercent: number;
+  card: CardTerms;
   enabled: boolean;
 };
 
@@ -80,7 +81,7 @@ function Choice(props: {
   );
 }
 
-export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscountPercent, enabled }: Props) {
+export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscountPercent, card, enabled }: Props) {
   const router = useRouter();
   const { items, hydrated, clear } = useCart();
   const [addressId, setAddressId] = useState(addresses[0]?.id);
@@ -136,7 +137,8 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
   const documentOk = !needsDocument || isValidDocument(documentDigits);
   const blocking = quote?.problems.filter((p) => !p.problem.startsWith("coupon_")) ?? [];
   const canPlace = enabled && selectedId && quote && blocking.length === 0 && documentOk && !quoting && !placing;
-  const installments = quote && method === "credit_card" ? quote.max_installments : 1;
+  const offer = quote && method === "credit_card" ? cardOffer(quote.total_cents, card) : null;
+  const claim = cardClaim(card) ?? "à vista";
 
   function submit() {
     if (!selectedId) return;
@@ -217,7 +219,11 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
               icon={<Icon size={18} className="text-wine" aria-hidden="true" />}
               title={title}
               detail={
-                value === "pix" && pixDiscountPercent > 0 ? `${pixDiscountPercent}% de desconto · ${detail}` : detail
+                value === "credit_card"
+                  ? claim[0].toUpperCase() + claim.slice(1)
+                  : value === "pix" && pixDiscountPercent > 0
+                    ? `${pixDiscountPercent}% de desconto · ${detail}`
+                    : detail
               }
             />
           ))}
@@ -269,11 +275,7 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
             {selectedId ? "Calculando..." : "Cadastre um endereço para ver o frete e o total."}
           </p>
         )}
-        {quote && installments > 1 ? (
-          <p className="text-right text-xs text-ink-muted">
-            em até {installments}x de {formatBRL(Math.round(quote.total_cents / installments))} sem juros
-          </p>
-        ) : null}
+        {offer ? <p className="text-right text-xs text-ink-muted">em {offer}</p> : null}
         {quote?.shipping_max_days ? (
           <p className="text-xs text-ink-muted">
             Entrega em {quote.shipping_min_days} a {quote.shipping_max_days} dias úteis após a postagem.

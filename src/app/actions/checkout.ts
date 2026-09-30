@@ -25,9 +25,7 @@ const checkoutSchema = z.object({
 const int = z.number().int();
 const quoteSchema = z.object({
   lines: z.array(z.object({ product_name: z.string(), variant_name: z.string(), quantity: int, total_cents: int })),
-  problems: z.array(
-    z.object({ problem: z.string(), available: int.optional(), min_subtotal_cents: int.optional() }),
-  ),
+  problems: z.array(z.object({ problem: z.string(), available: int.optional(), min_subtotal_cents: int.optional() })),
   subtotal_cents: int,
   discount_cents: int,
   payment_discount_cents: int,
@@ -35,7 +33,6 @@ const quoteSchema = z.object({
   shipping_min_days: int.nullable(),
   shipping_max_days: int.nullable(),
   total_cents: int,
-  max_installments: int,
   coupon_code: z.string().nullable(),
 });
 export type CheckoutQuote = z.infer<typeof quoteSchema>;
