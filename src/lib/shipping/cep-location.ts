@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { UFS } from "@/lib/validation/br";
 
 // BrasilAPI (v2) gives the city, the state and, for most CEPs, coordinates. They are often the
@@ -46,14 +47,23 @@ async function fetchPlace(cep: string): Promise<Place | null> {
 /**
  * Makes sure the CEP is in public.cep_locations, which the database uses to price shipping (region
  * by state, local delivery by distance). Only CEPs the API knows are stored, so the cache holds
- * real places. Returns whether the CEP is known.
+ * real places. Returns whether the CEP is known; never throws (a failure means no local options).
  */
 export async function ensureCepLocation(cep: string): Promise<boolean> {
   if (!/^\d{8}$/.test(cep)) return false;
-  const db = createAdminClient();
-  const { data: cached } = await db.from("cep_locations").select("cep").eq("cep", cep).maybeSingle();
-  if (cached) return true;
+  try {
+    // A cached CEP comes back with its city: no service role on the common path.
+    const { data } = await (await createClient()).rpc("estimate_shipping", { p_zip: cep });
+    if (typeof (data as { city?: unknown } | null)?.city === "string") return true;
+    return await cachePlace(cep);
+  } catch (err) {
+    console.error("cep lookup failed", err);
+    return false;
+  }
+}
 
+async function cachePlace(cep: string): Promise<boolean> {
+  const db = createAdminClient();
   const place = await fetchPlace(cep);
   if (!place) return false;
   if (place.latitude === null) {
@@ -78,6 +88,11 @@ export async function ensureCepLocation(cep: string): Promise<boolean> {
 /** Whether the CEP has coordinates (the stock needs them for local delivery). */
 export async function cepHasLocation(cep: string): Promise<boolean> {
   if (!(await ensureCepLocation(cep))) return false;
-  const { data } = await createAdminClient().from("cep_locations").select("latitude").eq("cep", cep).maybeSingle();
-  return data?.latitude != null;
+  try {
+    const { data } = await createAdminClient().from("cep_locations").select("latitude").eq("cep", cep).maybeSingle();
+    return data?.latitude != null;
+  } catch (err) {
+    console.error("cep lookup failed", err);
+    return false;
+  }
 }
