@@ -22,6 +22,8 @@ export async function POST(request: Request) {
   const dataId = url.searchParams.get("data.id");
   const requestId = request.headers.get("x-request-id");
   if (!verifyWebhookSignature({ signature: request.headers.get("x-signature"), requestId, dataId, secret })) {
+    // Note: sandbox (test credential) notifications are signed by an internal Mercado Pago app, so
+    // they are rejected here; the order page re-reads pending charges (recheckPendingPayment).
     return reply(401);
   }
   if (url.searchParams.get("type") !== "order" || !dataId || !/^[A-Za-z0-9]{1,64}$/.test(dataId)) return reply(200);
