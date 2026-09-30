@@ -4,10 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { fieldErrors, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { onlyDigits, UFS } from "@/lib/validation/br";
-
-import type { FormState } from "./account";
 
 const text = (min: number, max: number, message: string) => z.string().trim().min(min, message).max(max, message);
 
@@ -43,10 +42,7 @@ export async function saveAddress(_prev: FormState, formData: FormData): Promise
     is_default: formData.get("is_default") === "on",
   });
   if (!parsed.success) {
-    return {
-      status: "error",
-      fieldErrors: Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])),
-    };
+    return { status: "error", fieldErrors: fieldErrors(parsed.error) };
   }
 
   const { id, ...fields } = parsed.data;

@@ -3,9 +3,9 @@
 import { useActionState, useState } from "react";
 
 import { lookupCep, saveAddress } from "@/app/actions/addresses";
-import type { FormState } from "@/app/actions/account";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, inputClass } from "@/components/ui/field";
+import type { FormState } from "@/lib/forms";
 import { formatCep, onlyDigits, UFS } from "@/lib/validation/br";
 
 export type AddressValues = {

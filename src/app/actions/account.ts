@@ -4,14 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { fieldErrors, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { isValidDocument, isValidPhone, onlyDigits } from "@/lib/validation/br";
-
-export type FormState = {
-  status: "idle" | "ok" | "error";
-  message?: string;
-  fieldErrors?: Record<string, string>;
-};
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(2, "Informe seu nome.").max(120, "Nome muito longo."),
@@ -25,10 +20,6 @@ const profileSchema = z.object({
     .refine((v) => v === "" || isValidDocument(v), "CPF ou CNPJ inválido."),
   marketing_opt_in: z.boolean(),
 });
-
-function fieldErrors(error: z.ZodError) {
-  return Object.fromEntries(error.issues.map((issue) => [String(issue.path[0]), issue.message]));
-}
 
 export async function updateProfile(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await getSessionUser();

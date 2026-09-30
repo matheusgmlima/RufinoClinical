@@ -2,9 +2,10 @@
 
 import { useActionState } from "react";
 
-import { updateProfile, type FormState } from "@/app/actions/account";
+import { updateProfile } from "@/app/actions/account";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/field";
+import type { FormState } from "@/lib/forms";
 import { formatDocument, formatPhone } from "@/lib/validation/br";
 
 type Profile = { full_name: string | null; phone: string | null; document: string | null; marketing_opt_in: boolean };
