@@ -92,6 +92,13 @@ export async function recordPayment(order: MpOrder): Promise<string> {
   return data;
 }
 
+/** Voids a Pix code or boleto still waiting for payment. 409: already paid, canceled or expired. */
+export async function cancelMpOrder(id: string) {
+  await mp(`/v1/orders/${encodeURIComponent(id)}/cancel`, { body: {}, idempotencyKey: randomUUID() }).catch((err) => {
+    if (!(err instanceof MpError && err.status === 409)) throw err;
+  });
+}
+
 // ---------------------------------------------------------------------------------------------
 // Orders being paid. They are always loaded with the buyer's session, so RLS proves ownership.
 // ---------------------------------------------------------------------------------------------
