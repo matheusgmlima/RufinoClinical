@@ -68,7 +68,7 @@ const svgCsp = svg.res.headers.get("content-security-policy") ?? "";
 check(svgCsp.includes("default-src 'none'") && svgCsp.includes("sandbox"), "Static SVGs served with sandboxed CSP");
 
 // The payment webhook refuses unsigned notifications (401, or 503 while not configured)
-const webhook = await fetch(`${base}/api/webhooks/mercadopago?data.id=1&type=payment`, { method: "POST", body: "{}" });
+const webhook = await fetch(`${base}/api/webhooks/mercadopago?data.id=ORD1&type=order`, { method: "POST", body: "{}" });
 check([401, 503].includes(webhook.status), `Unsigned payment webhook is rejected (got ${webhook.status})`);
 
 // Checkout and order pages require a session

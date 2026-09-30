@@ -1,6 +1,6 @@
 import { serverEnv } from "@/lib/env/server";
 import { verifyWebhookSignature } from "@/lib/payments/gateway";
-import { getMpPayment, MpError, paymentsEnabled, recordPayment } from "@/lib/payments/mercadopago";
+import { getMpOrder, MpError, paymentsEnabled, recordPayment } from "@/lib/payments/mercadopago";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -9,9 +9,9 @@ const NORMAL_OUTCOMES = new Set(["paid", "already_paid", "refunded", "recorded"]
 const reply = (status: number) => new Response(null, { status });
 
 /**
- * Mercado Pago payment notifications (configured in "Suas integrações" → Webhooks).
- * A notification only says "payment X changed": the payment itself is always fetched from the
- * API, so a forged or replayed call cannot mark anything paid. Any status other than 200 makes
+ * Mercado Pago order notifications (configured in "Suas integrações" → Webhooks, event "Order").
+ * A notification only says "order X changed": the order itself is always fetched from the API,
+ * so a forged or replayed call cannot mark anything paid. Any status other than 200 makes
  * Mercado Pago retry later.
  */
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (!verifyWebhookSignature({ signature: request.headers.get("x-signature"), requestId, dataId, secret })) {
     return reply(401);
   }
-  if (url.searchParams.get("type") !== "payment" || !dataId || !/^\d{1,20}$/.test(dataId)) return reply(200);
+  if (url.searchParams.get("type") !== "order" || !dataId || !/^[A-Za-z0-9]{1,64}$/.test(dataId)) return reply(200);
   if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) return reply(413);
 
   let payload: { [key: string]: Json | undefined } = {};
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const event = { provider: "mercadopago", event_key: `${dataId}:${String(payload.id ?? requestId)}` };
   const { data: inserted } = await admin
     .from("webhook_events")
-    .upsert({ ...event, type: "payment", payload }, { onConflict: "provider,event_key", ignoreDuplicates: true })
+    .upsert({ ...event, type: "order", payload }, { onConflict: "provider,event_key", ignoreDuplicates: true })
     .select("id");
   if (!inserted?.length) {
     const { data: seen } = await admin.from("webhook_events").select("processed_at").match(event).maybeSingle();
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const outcome = await recordPayment(await getMpPayment(dataId));
+    const outcome = await recordPayment(await getMpOrder(dataId));
     await admin
       .from("webhook_events")
       .update({ processed_at: new Date().toISOString(), error: NORMAL_OUTCOMES.has(outcome) ? null : outcome })
