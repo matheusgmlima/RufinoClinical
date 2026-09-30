@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 // Inputs use a 12px radius (rounded-xl); buttons and pills stay fully rounded. See DESIGN.md.
 export const inputClass =
-  "h-12 w-full rounded-xl border border-line bg-white/70 px-4 text-base text-ink placeholder:text-ink-muted/70 transition focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/20 aria-[invalid=true]:border-wine disabled:opacity-60";
+  "h-12 w-full rounded-xl border border-line bg-white px-4 text-base text-ink placeholder:text-ink-muted/70 transition focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/20 aria-[invalid=true]:border-wine disabled:opacity-60";
 
 type FieldProps = {
   id: string;
