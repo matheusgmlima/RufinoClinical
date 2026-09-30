@@ -13,6 +13,9 @@ export function authErrorMessage(error: { code?: string; status?: number } | nul
     case "over_request_rate_limit":
     case "over_email_send_rate_limit":
       return "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.";
+    case "mfa_verification_failed":
+    case "mfa_challenge_expired":
+      return "Código incorreto ou vencido. Confira se o horário do celular está certo e use o código atual.";
     case "session_not_found":
     case "refresh_token_not_found":
       return "Sua sessão expirou. Entre novamente.";
