@@ -55,6 +55,7 @@ describe("orderEmail", () => {
   it("explains how the refund arrives for each payment method", () => {
     expect(orderEmail("refunded", { ...order, payment_method: "credit_card" }, SITE).text).toContain("fatura");
     expect(orderEmail("refunded", order, SITE).text).toContain("conta de origem");
+    expect(orderEmail("refunded", { ...order, payment_method: "boleto" }, SITE).text).toContain("dados bancários");
   });
 
   it("greets without a name when there is none", () => {

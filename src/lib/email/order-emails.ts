@@ -101,10 +101,12 @@ export function orderEmail(kind: OrderEmailKind, order: EmailOrder, siteUrl: str
       break;
     }
     case "refunded": {
-      const card = order.payment_method === "credit_card";
-      const when = card
-        ? "No cartão, o estorno aparece na fatura em até duas faturas, conforme o banco."
-        : "O valor volta para a conta de origem em até dois dias úteis.";
+      const when =
+        order.payment_method === "credit_card"
+          ? "No cartão, o estorno aparece em até duas faturas, conforme o banco."
+          : order.payment_method === "boleto"
+            ? "No boleto, o Mercado Pago faz a devolução e pode pedir seus dados bancários para isso."
+            : "O valor volta para a conta de origem em até dois dias úteis.";
       subject = `Reembolso do pedido ${n}`;
       title = "Reembolso feito";
       preheader = `Devolvemos ${formatBRL(order.total_cents)} do pedido ${n}.`;
