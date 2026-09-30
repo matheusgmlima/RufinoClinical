@@ -8,7 +8,7 @@ import { orderEmail, type EmailOrder, type OrderEmailKind } from "./order-emails
 import { emailEnabled, sendEmail } from "./send";
 
 const EMAIL_FIELDS = `id, number, customer_name, customer_email, payment_method, subtotal_cents, discount_cents,
-  payment_discount_cents, shipping_cents, total_cents, coupon_code, shipping_tracking_code, expires_at,
+  payment_discount_cents, shipping_cents, total_cents, coupon_code, shipping_method, shipping_tracking_code, expires_at,
   items:order_items(product_name, variant_name, quantity, total_cents)`;
 
 /**
@@ -21,9 +21,15 @@ export function notifyOrder(kind: OrderEmailKind, orderId: string) {
   if (!emailEnabled()) return;
   after(async () => {
     try {
-      const { data: order } = await createAdminClient().from("orders").select(EMAIL_FIELDS).eq("id", orderId).maybeSingle();
+      const db = createAdminClient();
+      const { data: order } = await db.from("orders").select(EMAIL_FIELDS).eq("id", orderId).maybeSingle();
       if (!order) return;
-      const email = orderEmail(kind, order as EmailOrder, publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, ""));
+      let pickup: EmailOrder["pickup"] = null;
+      if (order.shipping_method === "pickup") {
+        const { data } = await db.from("store_settings").select("pickup_address, pickup_hours").single();
+        if (data?.pickup_address) pickup = { address: data.pickup_address, hours: data.pickup_hours };
+      }
+      const email = orderEmail(kind, { ...order, pickup } as EmailOrder, publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, ""));
       await sendEmail(order.customer_email, email, `order-${kind}/${orderId}`);
     } catch (err) {
       console.error("order e-mail failed", { kind, orderId, err });

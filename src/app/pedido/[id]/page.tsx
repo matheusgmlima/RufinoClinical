@@ -10,13 +10,14 @@ import { AutoRefresh, CancelOrder, CopyCode, RetryPayment } from "@/components/o
 import { ButtonLink, buttonClass } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/field";
 import { requireUser } from "@/lib/auth/session";
-import { getStoreSettings } from "@/lib/catalog/queries";
+import { getDeliverySettings, getStoreSettings } from "@/lib/catalog/queries";
 import { publicEnv } from "@/lib/env/public";
 import { formatDateTime, formatDayMonth } from "@/lib/dates";
 import { installmentPlan } from "@/lib/money";
-import { isPayable, ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from "@/lib/orders/status";
+import { isPayable, ORDER_STATUS_TONE, orderStatusLabel } from "@/lib/orders/status";
 import { cardRejectionMessage, type PaymentDisplay } from "@/lib/payments/gateway";
 import { paymentsEnabled, recheckPendingPayment } from "@/lib/payments/mercadopago";
+import { SHIPPING_METHOD_LABEL, type ShippingMethod } from "@/lib/shipping/options";
 import type { Enums } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { formatCep } from "@/lib/validation/br";
@@ -28,14 +29,25 @@ const STATUS_NOTE: Record<Enums<"order_status">, string> = {
   paid: "Pagamento confirmado. Já estamos separando seus produtos.",
   preparing: "Seu pedido está em separação.",
   shipped: "Seu pedido está a caminho.",
-  delivered: "Pedido entregue. Obrigado pela compra!",
+  delivered: "Pedido entregue. Agradecemos a compra!",
   canceled: "Pedido cancelado. Nenhum valor foi cobrado ou o estorno já foi solicitado.",
   refunded: "Pedido reembolsado. O valor volta pelo mesmo meio de pagamento.",
 };
 
+// Courier and pickup orders read differently from carrier shipments.
+function statusNote(status: Enums<"order_status">, method: ShippingMethod): string {
+  if (method === "pickup") {
+    if (status === "paid" || status === "preparing") return "Pagamento confirmado. Avisamos quando estiver pronto para retirar.";
+    if (status === "shipped") return "Seu pedido está pronto para retirada.";
+    if (status === "delivered") return "Pedido retirado. Agradecemos a compra!";
+  }
+  if (method === "local" && status === "shipped") return "Seu pedido saiu para entrega com o motoboy.";
+  return STATUS_NOTE[status];
+}
+
 const ORDER_FIELDS = `id, number, status, payment_method, subtotal_cents, discount_cents, payment_discount_cents,
-  shipping_cents, total_cents, coupon_code, expires_at, created_at, shipping_address, shipping_tracking_code,
-  customer_email, customer_document,
+  shipping_cents, total_cents, coupon_code, expires_at, created_at, shipping_address, shipping_method,
+  shipping_tracking_code, customer_email, customer_document,
   items:order_items(product_name, variant_name, quantity, total_cents),
   payments(provider_payment_id, status, status_detail, raw, created_at, updated_at)`;
 
@@ -57,7 +69,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
 
   const supabase = await createClient();
   const load = () => supabase.from("orders").select(ORDER_FIELDS).eq("id", id).maybeSingle();
-  const [{ data: found }, settings] = await Promise.all([load(), getStoreSettings()]);
+  const [{ data: found }, settings, delivery] = await Promise.all([load(), getStoreSettings(), getDeliverySettings()]);
   // RLS: another customer's order is indistinguishable from a missing one.
   if (!found) notFound();
 
@@ -78,7 +90,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
   if (!open) {
     panel = (
       <div className="space-y-4">
-        <p className="text-ink">{STATUS_NOTE[order.status]}</p>
+        <p className="text-ink">{statusNote(order.status, order.shipping_method)}</p>
         {order.shipping_tracking_code ? (
           <p className="text-sm text-ink-muted">
             Código de rastreio: <strong className="select-all text-ink">{order.shipping_tracking_code}</strong>
@@ -170,7 +182,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
           <p className="text-sm text-ink-muted">Feito em {formatDateTime(order.created_at)}</p>
           <h1 className="text-4xl font-semibold tracking-tight text-ink">Pedido #{order.number}</h1>
           <p className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_TONE[order.status]}`}>
-            {ORDER_STATUS_LABEL[order.status]}
+            {orderStatusLabel(order.status, order.shipping_method)}
           </p>
         </header>
         <section aria-label="Pagamento" className="rounded-2xl border border-line p-6">
@@ -183,15 +195,27 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
         <h2 className="text-lg font-semibold text-ink">Resumo</h2>
         <OrderSummary lines={order.items} totals={order} />
         <div className="space-y-1 text-sm">
-          <h3 className="font-semibold text-ink">Entrega</h3>
-          <p className="leading-relaxed text-ink-muted">
-            {address.recipient_name}
-            <br />
-            {address.street}, {address.number}
-            {address.complement ? `, ${address.complement}` : ""}
-            <br />
-            {address.district}, {address.city} - {address.state}, {formatCep(address.zip_code)}
-          </p>
+          <h3 className="font-semibold text-ink">{SHIPPING_METHOD_LABEL[order.shipping_method]}</h3>
+          {order.shipping_method === "pickup" ? (
+            <p className="leading-relaxed text-ink-muted">
+              {delivery.pickup ? delivery.pickup.address : "Combinamos a retirada pelo seu e-mail."}
+              {delivery.pickup?.hours ? (
+                <>
+                  <br />
+                  {delivery.pickup.hours}
+                </>
+              ) : null}
+            </p>
+          ) : (
+            <p className="leading-relaxed text-ink-muted">
+              {address.recipient_name}
+              <br />
+              {address.street}, {address.number}
+              {address.complement ? `, ${address.complement}` : ""}
+              <br />
+              {address.district}, {address.city} - {address.state}, {formatCep(address.zip_code)}
+            </p>
+          )}
         </div>
       </aside>
     </div>

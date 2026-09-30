@@ -6,7 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/field";
 import { formatLongDate } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
-import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from "@/lib/orders/status";
+import { ORDER_STATUS_TONE, orderStatusLabel } from "@/lib/orders/status";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Meus pedidos" };
@@ -16,7 +16,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
   const supabase = await createClient();
   const { data: orders } = await supabase
     .from("orders")
-    .select("id, number, status, total_cents, created_at, items:order_items(product_name, quantity)")
+    .select("id, number, status, shipping_method, total_cents, created_at, items:order_items(product_name, quantity)")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -43,7 +43,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/conta">) 
                       </p>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_TONE[order.status]}`}>
-                      {ORDER_STATUS_LABEL[order.status]}
+                      {orderStatusLabel(order.status, order.shipping_method)}
                     </span>
                   </div>
                   <p className="mt-3 text-sm text-ink-muted">

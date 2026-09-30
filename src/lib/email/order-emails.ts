@@ -19,8 +19,11 @@ export type EmailOrder = {
   shipping_cents: number;
   total_cents: number;
   coupon_code: string | null;
+  shipping_method: "standard" | "local" | "pickup";
   shipping_tracking_code: string | null;
   expires_at: string | null;
+  /** Where and when to pick up (pickup orders), from the store settings. */
+  pickup?: { address: string; hours: string | null } | null;
   items: { product_name: string; variant_name: string; quantity: number; total_cents: number }[];
 };
 
@@ -77,17 +80,46 @@ export function orderEmail(kind: OrderEmailKind, order: EmailOrder, siteUrl: str
       text = [hello, `Seu pedido ${n} está reservado. Pague ${how} para garantir os produtos.`, until ? `Pague até ${until}.` : "", items.text, `Pagar: ${orderUrl}`];
       break;
     }
-    case "paid":
+    case "paid": {
+      const next =
+        order.shipping_method === "pickup"
+          ? "Avisamos quando estiver pronto para retirar."
+          : order.shipping_method === "local"
+            ? "Avisamos quando sair com o motoboy."
+            : "Avisamos quando saírem para entrega.";
       subject = `Pagamento aprovado: pedido ${n}`;
       title = "Pagamento aprovado";
       preheader = `Já estamos separando o pedido ${n}.`;
       html =
-        paragraph(`${escapeHtml(hello)} O pagamento do pedido ${strong(n)} foi aprovado. Já estamos separando seus produtos e avisamos quando saírem para entrega.`) +
+        paragraph(`${escapeHtml(hello)} O pagamento do pedido ${strong(n)} foi aprovado. Já estamos separando seus produtos. ${next}`) +
         items.html +
         button("Acompanhar pedido", orderUrl);
-      text = [hello, `O pagamento do pedido ${n} foi aprovado. Já estamos separando seus produtos.`, items.text, `Acompanhar: ${orderUrl}`];
+      text = [hello, `O pagamento do pedido ${n} foi aprovado. Já estamos separando seus produtos. ${next}`, items.text, `Acompanhar: ${orderUrl}`];
       break;
+    }
     case "shipped": {
+      if (order.shipping_method === "local") {
+        subject = `Pedido ${n} saiu para entrega`;
+        title = "Seu pedido saiu para entrega";
+        preheader = `O pedido ${n} está com o motoboy.`;
+        html =
+          paragraph(`${escapeHtml(hello)} O pedido ${strong(n)} saiu com o motoboy e chega ainda hoje no endereço de entrega.`) +
+          button("Ver pedido", orderUrl);
+        text = [hello, `O pedido ${n} saiu com o motoboy e chega ainda hoje no endereço de entrega.`, `Pedido: ${orderUrl}`];
+        break;
+      }
+      if (order.shipping_method === "pickup") {
+        const where = order.pickup ? [order.pickup.address, order.pickup.hours].filter(Boolean).join(" · ") : null;
+        subject = `Pedido ${n} pronto para retirada`;
+        title = "Pronto para retirar";
+        preheader = `O pedido ${n} já pode ser retirado.`;
+        html =
+          paragraph(`${escapeHtml(hello)} O pedido ${strong(n)} está pronto para retirada. Leve um documento com foto.`) +
+          (where ? callout(escapeHtml(where)) : "") +
+          button("Ver pedido", orderUrl);
+        text = [hello, `O pedido ${n} está pronto para retirada. Leve um documento com foto.`, where ?? "", `Pedido: ${orderUrl}`];
+        break;
+      }
       const code = order.shipping_tracking_code ?? "";
       subject = `Pedido ${n} enviado`;
       title = "Seu pedido está a caminho";

@@ -14,6 +14,7 @@ const order: EmailOrder = {
   shipping_cents: 1990,
   total_cents: 10523,
   coupon_code: "BEMVINDA10",
+  shipping_method: "standard",
   shipping_tracking_code: "BR123456789BR",
   expires_at: "2026-10-01T02:30:00Z",
   items: [{ product_name: "Kinesio Tape <b>5 cm</b>", variant_name: "Bege", quantity: 2, total_cents: 9980 }],
@@ -50,6 +51,29 @@ describe("orderEmail", () => {
     expect(subject).toBe("Pedido #1042 enviado");
     expect(html).toContain("BR123456789BR");
     expect(text).toContain("Código de rastreio: BR123456789BR");
+  });
+
+  it("tells a local delivery left with the courier, without tracking", () => {
+    const local = { ...order, shipping_method: "local" as const, shipping_tracking_code: null };
+    const { subject, text } = orderEmail("shipped", local, SITE);
+    expect(subject).toBe("Pedido #1042 saiu para entrega");
+    expect(text).toContain("motoboy");
+    expect(text).not.toContain("Correios");
+    expect(orderEmail("paid", local, SITE).text).toContain("Avisamos quando sair com o motoboy.");
+  });
+
+  it("gives the pickup address when a pickup order is ready", () => {
+    const pickup = {
+      ...order,
+      shipping_method: "pickup" as const,
+      shipping_tracking_code: null,
+      pickup: { address: "Rua <Um>, 10, Recife", hours: "Seg. a sex., 9h às 18h" },
+    };
+    const { subject, html, text } = orderEmail("shipped", pickup, SITE);
+    expect(subject).toBe("Pedido #1042 pronto para retirada");
+    expect(html).toContain("Rua &lt;Um&gt;, 10, Recife · Seg. a sex., 9h às 18h");
+    expect(text).toContain("Rua <Um>, 10, Recife");
+    expect(text).not.toContain("Correios");
   });
 
   it("explains how the refund arrives for each payment method", () => {
