@@ -27,10 +27,22 @@ describe("buildCsp", () => {
     expect(directive(csp, "base-uri")).toBe("base-uri 'self'");
   });
 
-  it("allows only the project's Supabase origin for data and images", () => {
+  it("allows only the project's Supabase origin and the payment gateway for data and images", () => {
     const csp = buildCsp({ ...base, isDev: false });
-    expect(directive(csp, "connect-src")).toBe("connect-src 'self' https://proj.supabase.co wss://proj.supabase.co");
+    expect(directive(csp, "connect-src")).toMatch(
+      /^connect-src 'self' https:\/\/proj\.supabase\.co wss:\/\/proj\.supabase\.co https:\/\/api\.mercadopago\.com /,
+    );
+    expect(directive(csp, "connect-src")).not.toMatch(/\*|https: |http:/);
     expect(directive(csp, "img-src")).toContain("https://proj.supabase.co");
+  });
+
+  it("lets the Mercado Pago card form frame and call the gateway, but never adds script hosts", () => {
+    const csp = buildCsp({ ...base, isDev: false });
+    expect(directive(csp, "frame-src")).toBe(
+      "frame-src 'self' https://secure-fields.mercadopago.com https://api-static.mercadopago.com",
+    );
+    expect(directive(csp, "connect-src")).toContain("https://api.mercadopago.com");
+    expect(directive(csp, "script-src")).not.toContain("https:");
   });
 
   it("upgrades insecure requests in production only", () => {

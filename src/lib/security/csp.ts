@@ -4,6 +4,18 @@ type CspOptions = {
   supabaseUrl: string;
 };
 
+// Mercado Pago card form (Card Payment Brick). Its scripts need no host entry: our nonced code
+// loads the SDK and 'strict-dynamic' extends trust to what it loads. Allowed site-wide because a
+// client-side navigation keeps the CSP of the page where the visit started.
+const MP_CONNECT = [
+  "https://api.mercadopago.com",
+  "https://api-static.mercadopago.com",
+  "https://secure-fields.mercadopago.com",
+  "https://api.mercadolibre.com",
+];
+const MP_FRAMES = ["https://secure-fields.mercadopago.com", "https://api-static.mercadopago.com"];
+const MP_ASSETS = "https://http2.mlstatic.com";
+
 /**
  * Strict, nonce-based Content Security Policy.
  * Scripts only run with the per-request nonce ('strict-dynamic' lets them load their own deps).
@@ -19,10 +31,10 @@ export function buildCsp({ nonce, isDev, supabaseUrl }: CspOptions): string {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(isDev ? ["'unsafe-eval'"] : [])],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "blob:", "data:", supabaseHttp],
+    "img-src": ["'self'", "blob:", "data:", supabaseHttp, MP_ASSETS],
     "font-src": ["'self'"],
-    "connect-src": ["'self'", supabaseHttp, supabaseWs],
-    "frame-src": ["'self'"],
+    "connect-src": ["'self'", supabaseHttp, supabaseWs, ...MP_CONNECT, MP_ASSETS],
+    "frame-src": ["'self'", ...MP_FRAMES],
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
