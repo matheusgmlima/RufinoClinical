@@ -69,3 +69,10 @@ Contraste: `wine` sobre `cream` ≈ 11:1; `ink-muted` sobre `cream` ≈ 5.5:1. O
 - Ícones: Phosphor, traço regular.
 - Z-index: barra de compra no celular 20, header 30, overlay 40, gaveta 50.
 - Produto sem foto mostra o símbolo R em vinho 10% sobre blush. Não é imagem definitiva.
+
+## Decisões de interface (Fase 3)
+
+- Escolhas do checkout (endereço, forma de pagamento) são cartões com rádio visível: borda vinho e fundo vinho 4% quando selecionados.
+- Resumo do pedido sempre no painel blush à direita (abaixo do formulário no celular). Valores vêm do banco; o texto "Calculando..." aparece enquanto a cotação atualiza.
+- Página do pedido: um único bloco de pagamento conforme o estado (Pix com QR e copia e cola, boleto com link e linha digitável, cartão com o formulário do Mercado Pago estilizado com os tokens da marca, ou a mensagem do status).
+- Horários sempre no fuso de Brasília.
