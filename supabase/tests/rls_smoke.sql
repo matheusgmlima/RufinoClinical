@@ -153,6 +153,7 @@ select pg_temp.val('audit rows for admin category insert', '1', $q$select count(
 
 -- Checkout: prices, stock and payments come only from the database -------------------------
 update public.store_settings set pix_discount_percent = 5, free_shipping_threshold_cents = null, max_installments = 6, min_installment_cents = 3000;
+select pg_temp.try('settings: more interest-free installments than the maximum', 'blocked', 'update public.store_settings set interest_free_installments = 7');
 update public.shipping_rates set price_cents = 1990 where region = 'SE';
 insert into public.addresses (id, user_id, recipient_name, zip_code, street, number, district, city, state) values
   ('00000000-0000-0000-0000-0000000000e3', '33333333-3333-3333-3333-333333333333', 'Outro', '01001000', 'Rua B', '2', 'Centro', 'São Paulo', 'SP');
