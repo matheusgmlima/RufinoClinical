@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 import { publicEnv } from "@/lib/env/public";
 
-import { authCookieOptions } from "./cookies";
+import { authCookieOptions, capCookieOptions } from "./cookies";
 import type { Database } from "./database.types";
 
 /** Per-request client that acts as the signed-in user, so RLS applies. */
@@ -22,7 +22,7 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, capCookieOptions(options)));
           } catch {
             // Server Components cannot write cookies; the proxy refreshes the session instead.
           }

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { publicEnv } from "@/lib/env/public";
 
-import { authCookieOptions } from "./cookies";
+import { authCookieOptions, capCookieOptions } from "./cookies";
 import type { Database } from "./database.types";
 
 /**
@@ -26,7 +26,7 @@ export async function updateSession(request: NextRequest, requestHeaders: Header
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           requestHeaders.set("cookie", request.headers.get("cookie") ?? "");
           response = NextResponse.next({ request: { headers: requestHeaders } });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, capCookieOptions(options)));
           // Responses that set auth cookies must never be cached by a CDN.
           Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
         },
