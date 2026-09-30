@@ -86,11 +86,16 @@ export async function recordPayment(order: MpOrder): Promise<string> {
   if (error) throw new Error(`record_payment failed: ${error.message}`);
   if (data === "needs_refund") {
     console.warn("refunding a charge the order could not take", order.id);
-    await mp(`/v1/orders/${order.id}/refund`, { body: {}, idempotencyKey: randomUUID() }).catch((err) => {
-      if (!(err instanceof MpError && err.status === 409)) throw err; // 409: already refunded or in progress
-    });
+    await refundMpOrder(order.id);
   }
   return data;
+}
+
+/** Full refund of a charge. 409: already refunded or a refund is in progress. */
+export async function refundMpOrder(id: string) {
+  await mp(`/v1/orders/${encodeURIComponent(id)}/refund`, { body: {}, idempotencyKey: randomUUID() }).catch((err) => {
+    if (!(err instanceof MpError && err.status === 409)) throw err;
+  });
 }
 
 /**
@@ -109,10 +114,28 @@ export async function recheckPendingPayment(payment?: {
 }
 
 /** Voids a Pix code or boleto still waiting for payment. 409: already paid, canceled or expired. */
-export async function cancelMpOrder(id: string) {
+async function cancelMpOrder(id: string) {
   await mp(`/v1/orders/${encodeURIComponent(id)}/cancel`, { body: {}, idempotencyKey: randomUUID() }).catch((err) => {
     if (!(err instanceof MpError && err.status === 409)) throw err;
   });
+}
+
+/**
+ * After an order is canceled, voids its Pix codes and boletos still open at the gateway (best effort:
+ * one paid anyway arrives by webhook and is refunded). The session's RLS decides which it can see.
+ */
+export async function voidOpenCharges(supabase: Awaited<ReturnType<typeof createClient>>, orderId: string) {
+  if (!paymentsEnabled()) return;
+  const { data } = await supabase
+    .from("payments")
+    .select("provider_payment_id")
+    .eq("order_id", orderId)
+    .eq("status", "pending");
+  await Promise.all(
+    (data ?? []).map(({ provider_payment_id }) =>
+      cancelMpOrder(provider_payment_id).catch((err) => console.error("gateway cancel failed", err)),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------------------------

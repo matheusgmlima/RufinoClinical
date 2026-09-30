@@ -6,12 +6,12 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
 import { cardRejectionMessage } from "@/lib/payments/gateway";
 import {
-  cancelMpOrder,
   createCardPayment,
   createPixOrBoleto,
   loadPayableOrder,
   MpError,
   paymentsEnabled,
+  voidOpenCharges,
 } from "@/lib/payments/mercadopago";
 import { createClient } from "@/lib/supabase/server";
 import { isValidDocument, onlyDigits } from "@/lib/validation/br";
@@ -110,17 +110,6 @@ export async function cancelOrder(orderId: string): Promise<void> {
   if (!z.uuid().safeParse(orderId).success || !(await getSessionUser())) return;
   const supabase = await createClient();
   const { data: canceled } = await supabase.rpc("cancel_order", { p_order_id: orderId });
-  if (canceled && paymentsEnabled()) {
-    const { data: open } = await supabase
-      .from("payments")
-      .select("provider_payment_id")
-      .eq("order_id", orderId)
-      .eq("status", "pending");
-    await Promise.all(
-      (open ?? []).map(({ provider_payment_id }) =>
-        cancelMpOrder(provider_payment_id).catch((err) => console.error("gateway cancel failed", err)),
-      ),
-    );
-  }
+  if (canceled) await voidOpenCharges(supabase, orderId);
   revalidatePath(`/pedido/${orderId}`);
 }
