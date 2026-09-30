@@ -6,7 +6,7 @@ E-commerce de produtos para fisioterapia dermatofuncional. Next.js 16 (App Route
 
 - Design e marca: `DESIGN.md`. Logos em `public/brand/` (regenerar com `npm run brand:build`).
 - Banco: migrações em `supabase/migrations/` (aplicadas no projeto `wkmjvqshquzwlrtlmnqa`, região sa-east-1; o nome do arquivo usa a versão registrada no banco). Tipos em `src/lib/supabase/database.types.ts`.
-- Pagamentos: Mercado Pago Checkout Transparente pela API de Orders (`/v1/orders`; a de Payments está sendo descontinuada). Pix, boleto e cartão via Card Payment Brick. Fluxo: `quote_order`/`create_order` (SQL) → `src/lib/payments/mercadopago.ts` → `record_payment` (SQL). Webhook (evento Order) em `src/app/api/webhooks/mercadopago`.
+- Pagamentos: Mercado Pago Checkout Transparente pela API de Orders (`/v1/orders`; a de Payments está sendo descontinuada). Pix, boleto e cartão via Card Payment Brick. Fluxo: `quote_order`/`create_order` (SQL) → `src/lib/payments/mercadopago.ts` → `record_payment` (SQL). Webhook (evento Order) em `src/app/api/webhooks/mercadopago`; a página do pedido relê cobranças pendentes no gateway (`recheckPendingPayment`) caso o webhook falhe. Com credenciais de teste as notificações vêm assinadas por um app interno do MP e são recusadas (401): no sandbox a confirmação chega por essa releitura.
 - Checagens antes de commitar: `npm run lint && npm run typecheck && npm test && npm run build`.
 - Verificador de segurança contra um servidor rodando: `npm run security:check -- http://localhost:3000` (roda no CI).
 
