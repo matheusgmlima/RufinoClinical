@@ -42,7 +42,13 @@ export function MfaForm({ factorId }: { factorId: string | null }) {
     const code = String(new FormData(event.currentTarget).get("code") ?? "").replace(/\D/g, "");
     setPending(true);
     setError(null);
-    const { error } = await createClient().auth.mfa.challengeAndVerify({ factorId: activeFactor, code });
+    const mfa = createClient().auth.mfa;
+    let { error } = await mfa.challengeAndVerify({ factorId: activeFactor, code });
+    // Supabase requires the challenge and the verify from the same IP; mobile networks and
+    // proxies sometimes switch between the two calls, so a fresh pair usually succeeds.
+    for (let retry = 0; retry < 2 && error?.code === "mfa_ip_address_mismatch"; retry++) {
+      ({ error } = await mfa.challengeAndVerify({ factorId: activeFactor, code }));
+    }
     setPending(false);
     if (error) return setError(authErrorMessage(error));
     router.replace("/admin");

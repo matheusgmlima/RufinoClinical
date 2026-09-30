@@ -16,6 +16,8 @@ export function authErrorMessage(error: { code?: string; status?: number } | nul
     case "mfa_verification_failed":
     case "mfa_challenge_expired":
       return "Código incorreto ou vencido. Confira se o horário do celular está certo e use o código atual.";
+    case "mfa_ip_address_mismatch":
+      return "Sua conexão mudou durante a verificação. Espere o próximo código e tente de novo.";
     case "session_not_found":
     case "refresh_token_not_found":
       return "Sua sessão expirou. Entre novamente.";
