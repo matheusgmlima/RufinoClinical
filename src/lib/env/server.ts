@@ -10,10 +10,13 @@ const schema = z.object({
   // Mercado Pago private credentials (Suas integrações → Credenciais / Webhooks).
   MP_ACCESS_TOKEN: optional(z.string().regex(/^(APP_USR|TEST)-[\w-]+$/)),
   MP_WEBHOOK_SECRET: optional(z.string().min(16)),
+  // "true" only with test credentials: sends Mercado Pago's sandbox buyer instead of the real one.
+  MP_TEST_MODE: optional(z.enum(["true", "false"])),
 });
 
 export const serverEnv = schema.parse({
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   MP_ACCESS_TOKEN: process.env.MP_ACCESS_TOKEN,
   MP_WEBHOOK_SECRET: process.env.MP_WEBHOOK_SECRET,
+  MP_TEST_MODE: process.env.MP_TEST_MODE,
 });
