@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isValidDocument, onlyDigits } from "@/lib/validation/br";
 
 const MAX_DECLINES_PER_DAY = 5; // per customer: stops card-testing with stolen cards
+const REVIEWING = "O Mercado Pago está analisando o pagamento. Esta página atualiza sozinha com a resposta.";
 
 async function payableOrder(orderId: string) {
   if (!z.uuid().safeParse(orderId).success || !paymentsEnabled() || !(await getSessionUser())) return null;
@@ -28,6 +29,13 @@ async function payableOrder(orderId: string) {
 export async function generatePayment(orderId: string): Promise<{ error?: string }> {
   const found = await payableOrder(orderId);
   if (!found || found.order.payment_method === "credit_card") return { error: "Este pedido não pode mais ser pago." };
+  // A code already waiting for payment is reused, never duplicated (RLS: own payments only).
+  const { count } = await found.supabase
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", orderId)
+    .eq("status", "pending");
+  if (count) return {};
   try {
     if (!(await createPixOrBoleto(found.order))) {
       return { error: "O prazo deste pedido está acabando. Cancele e faça um novo pedido." };
@@ -44,10 +52,6 @@ export async function generatePayment(orderId: string): Promise<{ error?: string
 const cardSchema = z.object({
   token: z.string().min(8).max(200),
   payment_method_id: z.string().regex(/^[a-z_]{2,30}$/),
-  issuer_id: z
-    .union([z.string().max(20), z.number().int()])
-    .nullish()
-    .transform((id) => (id == null || id === "" ? undefined : String(id))),
   installments: z.number().int().min(1).max(12),
   payer: z.object({
     email: z.email().max(254),
@@ -77,10 +81,11 @@ export async function payWithCard(orderId: string, input: unknown): Promise<{ ap
   }
 
   try {
-    const { payment, outcome } = await createCardPayment(found.order, card.data);
+    const { outcome, status, statusDetail } = await createCardPayment(found.order, card.data);
     revalidatePath(`/pedido/${orderId}`);
     if (outcome === "paid" || outcome === "already_paid") return { approved: true };
-    if (payment.status !== "approved") return { approved: false, message: cardRejectionMessage(payment.status_detail) };
+    if (status === "processing" || status === "in_review") return { approved: false, message: REVIEWING };
+    if (status !== "processed") return { approved: false, message: cardRejectionMessage(statusDetail) };
     // Approved, but the order could not take it (e.g. canceled meanwhile): see recordPayment.
     return { approved: false, message: "Não foi possível confirmar este pedido. O valor cobrado será estornado." };
   } catch (err) {

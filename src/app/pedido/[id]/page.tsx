@@ -96,22 +96,31 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
   } else if (!paymentsEnabled() || !publicEnv.NEXT_PUBLIC_MP_PUBLIC_KEY) {
     panel = <FormAlert>Os pagamentos estão sendo configurados. Tente novamente em alguns minutos.</FormAlert>;
   } else if (order.payment_method === "credit_card") {
-    panel = (
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-ink">Pague com cartão de crédito</h2>
-        {payment?.status === "rejected" ? <FormAlert>{cardRejectionMessage(payment.status_detail)}</FormAlert> : null}
-        <CardPayment
-          orderId={order.id}
-          amountCents={order.total_cents}
-          email={order.customer_email}
-          document={order.customer_document ?? ""}
-          maxInstallments={
-            installmentPlan(order.total_cents, settings.maxInstallments, settings.minInstallmentCents).count
-          }
-          publicKey={publicEnv.NEXT_PUBLIC_MP_PUBLIC_KEY}
-        />
-      </div>
-    );
+    panel =
+      payment?.status === "pending" ? (
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-ink">Pagamento em análise</h2>
+          <p className="text-sm text-ink-muted">
+            O Mercado Pago está analisando o pagamento. Esta página atualiza sozinha com a resposta.
+          </p>
+          <AutoRefresh seconds={15} />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-ink">Pague com cartão de crédito</h2>
+          {payment?.status === "rejected" ? <FormAlert>{cardRejectionMessage(payment.status_detail)}</FormAlert> : null}
+          <CardPayment
+            orderId={order.id}
+            amountCents={order.total_cents}
+            email={order.customer_email}
+            document={order.customer_document ?? ""}
+            maxInstallments={
+              installmentPlan(order.total_cents, settings.maxInstallments, settings.minInstallmentCents).count
+            }
+            publicKey={publicEnv.NEXT_PUBLIC_MP_PUBLIC_KEY}
+          />
+        </div>
+      );
   } else if (order.payment_method === "pix") {
     panel = display?.qrCode ? (
       <div className="space-y-5">
