@@ -81,6 +81,7 @@ select pg_temp.val('anon: estimate shipping', 'São Paulo/standard', $q$select c
 select pg_temp.val('anon: estimate unknown CEP', '0', $q$select jsonb_array_length(public.estimate_shipping('00000001') -> 'options')::text$q$);
 select pg_temp.try('anon: estimate malformed CEP', 'blocked', $q$select public.estimate_shipping('0100100')$q$);
 select pg_temp.try('anon: distance function', 'blocked', $q$select private.cep_distance_km('01001000', '01310100')$q$);
+select pg_temp.try('anon: read carrier quotes', 'blocked', 'select * from public.shipping_quotes');
 select pg_temp.try('anon: admin status', 'blocked', 'select public.admin_status()');
 select pg_temp.try('anon: delete account', 'blocked', 'select public.delete_my_account()');
 reset role;
@@ -106,6 +107,7 @@ select pg_temp.try('customer: update settings', 'allowed rows=0', 'update public
 select pg_temp.try('customer: cheaper local delivery', 'allowed rows=0', 'update public.store_settings set local_delivery_price_cents = 0');
 select pg_temp.try('customer: write CEP cache', 'blocked', $q$insert into public.cep_locations (cep, state) values ('99999998', 'SP')$q$);
 select pg_temp.try('customer: move CEP closer', 'blocked', $q$update public.cep_locations set latitude = -23.56, longitude = -46.65$q$);
+select pg_temp.try('customer: write carrier quote', 'blocked', $q$insert into public.shipping_quotes (zip, origin_zip, items, services, expires_at) values ('01001000', '01310100', '[]', '[]', now() + interval '1 day')$q$);
 select pg_temp.val('customer: admin status', 'none', 'select public.admin_status()');
 select pg_temp.try('customer: adjust stock', 'blocked', $q$select public.adjust_stock('00000000-0000-0000-0000-00000000b001', 5)$q$);
 select pg_temp.try('customer: delete account with open orders', 'blocked', 'select public.delete_my_account()');
@@ -233,12 +235,36 @@ select pg_temp.val('quote: more than stock', 'insufficient_stock', $q$select pub
 select pg_temp.val('quote: someone else''s address', 'address_not_found', $q$select public.quote_order(pg_temp.cart(1), '00000000-0000-0000-0000-0000000000e3', 'pix') #>> '{problems,0,problem}'$q$);
 select pg_temp.try('quote: duplicated variant', 'blocked', $q$select public.quote_order(pg_temp.cart(1) || pg_temp.cart(1), null, 'pix')$q$);
 select pg_temp.try('quote: zero quantity', 'blocked', $q$select public.quote_order(pg_temp.cart(0), null, 'pix')$q$);
-select pg_temp.try('customer: call private.price_order', 'blocked', $q$select private.price_order(auth.uid(), pg_temp.cart(1), null, 'pix', null, 'standard')$q$);
-select pg_temp.try('customer: call private.shipping_options', 'blocked', $q$select private.shipping_options('01001000', 'SP', 0)$q$);
+select pg_temp.try('customer: call private.price_order', 'blocked', $q$select private.price_order(auth.uid(), pg_temp.cart(1), null, 'pix', null, 'standard', null)$q$);
+select pg_temp.try('customer: call private.shipping_options', 'blocked', $q$select private.shipping_options('01001000', 'SP', 0, null)$q$);
 select pg_temp.val('quote: options near the stock', 'standard,local,pickup', $q$select string_agg(o ->> 'method', ',') from jsonb_array_elements(public.quote_order(pg_temp.cart(1), (select id from public.addresses limit 1), 'pix') -> 'shipping_options') o$q$);
 select pg_temp.val('quote: local delivery', '3210', $q$select public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', 'SEGREDO10', 'local') ->> 'total_cents'$q$);
 select pg_temp.val('quote: pickup is free', '1710', $q$select public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', 'SEGREDO10', 'pickup') ->> 'total_cents'$q$);
 select pg_temp.val('estimate: another state gets carrier only', 'standard', $q$select string_agg(o ->> 'method', ',') from jsonb_array_elements(public.estimate_shipping('20040020') -> 'options') o$q$);
+reset role;
+-- Carrier quote (Melhor Envio) cached by the server for cart(2) to customer 1's CEP.
+insert into public.shipping_quotes (zip, origin_zip, items, services, expires_at) values ('01001000', '01310100', private.cart_key(pg_temp.cart(2)),
+  '[{"id":2,"service":"Correios SEDEX","price_cents":4230,"min_days":1,"max_days":2},{"id":1,"service":"Correios PAC","price_cents":2490,"min_days":5,"max_days":7}]', now() + interval '1 hour');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+select pg_temp.try('customer: read carrier quotes', 'blocked', 'select * from public.shipping_quotes');
+select pg_temp.val('quote: carrier services, cheapest first', 'Correios PAC,Correios SEDEX', $q$select string_agg(o ->> 'service', ',') from jsonb_array_elements(public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix') -> 'shipping_options') o where o ->> 'method' = 'standard'$q$);
+select pg_temp.val('quote: cheapest carrier by default', '2490/true', $q$select concat(q ->> 'shipping_cents', '/', q ->> 'carrier_quoted') from public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix') q$q$);
+select pg_temp.val('quote: chosen carrier service', '4230', $q$select public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', null, 'standard', 2) ->> 'shipping_cents'$q$);
+select pg_temp.val('quote: unknown carrier service', 'shipping_unavailable', $q$select public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix', null, 'standard', 99) #>> '{problems,0,problem}'$q$);
+select pg_temp.val('quote: another cart keeps the flat rate', '1990/false', $q$select concat(q ->> 'shipping_cents', '/', q ->> 'carrier_quoted') from public.quote_order(pg_temp.cart(1), (select id from public.addresses limit 1), 'pix') q$q$);
+select pg_temp.val('estimate: carrier quote for the item', 'Correios PAC', $q$select public.estimate_shipping('01001000', 2000, pg_temp.cart(2)) #>> '{options,0,service}'$q$);
+reset role;
+update public.store_settings set free_shipping_threshold_cents = 1000;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+select pg_temp.val('quote: free shipping covers the cheapest carrier only', '0,4230', $q$select string_agg(o ->> 'price_cents', ',') from jsonb_array_elements(public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix') -> 'shipping_options') o where o ->> 'method' = 'standard'$q$);
+reset role;
+update public.store_settings set free_shipping_threshold_cents = null;
+update public.shipping_quotes set expires_at = now() - interval '1 minute' where zip = '01001000';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+select pg_temp.val('quote: expired carrier quote falls back to the flat rate', '1990/false', $q$select concat(q ->> 'shipping_cents', '/', q ->> 'carrier_quoted') from public.quote_order(pg_temp.cart(2), (select id from public.addresses limit 1), 'pix') q$q$);
 reset role;
 update public.store_settings set local_delivery_radius_km = 1;
 set local role authenticated;

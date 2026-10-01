@@ -290,6 +290,7 @@ export type Database = {
       orders: {
         Row: {
           canceled_at: string | null
+          carrier_service_id: number | null
           coupon_code: string | null
           coupon_id: string | null
           created_at: string
@@ -322,6 +323,7 @@ export type Database = {
         }
         Insert: {
           canceled_at?: string | null
+          carrier_service_id?: number | null
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string
@@ -354,6 +356,7 @@ export type Database = {
         }
         Update: {
           canceled_at?: string | null
+          carrier_service_id?: number | null
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string
@@ -655,6 +658,36 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_quotes: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          items: Json
+          origin_zip: string
+          services: Json
+          zip: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          items: Json
+          origin_zip: string
+          services: Json
+          zip: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          items?: Json
+          origin_zip?: string
+          services?: Json
+          zip?: string
+        }
+        Relationships: []
+      }
       shipping_rates: {
         Row: {
           max_days: number
@@ -827,6 +860,7 @@ export type Database = {
           p_address_id: string
           p_coupon_code?: string
           p_items: Json
+          p_carrier_service?: number
           p_payment_method: Database["public"]["Enums"]["payment_method"]
           p_shipping?: Database["public"]["Enums"]["shipping_method"]
         }
@@ -834,7 +868,7 @@ export type Database = {
       }
       delete_my_account: { Args: never; Returns: undefined }
       estimate_shipping: {
-        Args: { p_goods_cents?: number; p_zip: string }
+        Args: { p_goods_cents?: number; p_items?: Json; p_zip: string }
         Returns: Json
       }
       quote_order: {
@@ -842,6 +876,7 @@ export type Database = {
           p_address_id: string
           p_coupon_code?: string
           p_items: Json
+          p_carrier_service?: number
           p_payment_method: Database["public"]["Enums"]["payment_method"]
           p_shipping?: Database["public"]["Enums"]["shipping_method"]
         }
