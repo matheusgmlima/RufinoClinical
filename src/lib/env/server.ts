@@ -18,6 +18,11 @@ const schema = z.object({
   EMAIL_FROM: optional(z.string().regex(/^(.+ <[^\s@<>]+@[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+)$/)),
   // Where customer replies go (the store's contact inbox).
   EMAIL_REPLY_TO: optional(z.email()),
+  // Melhor Envio personal token (Integrações → Permissões de acesso), scope shipping-calculate only.
+  // Unset, carrier quotes are skipped and the regional flat rates apply.
+  MELHOR_ENVIO_TOKEN: optional(z.string().min(20)),
+  // "production" with a token from melhorenvio.com.br; anything else uses the sandbox.
+  MELHOR_ENVIO_ENV: optional(z.enum(["sandbox", "production"])),
 });
 
 export const serverEnv = schema.parse({
@@ -28,4 +33,6 @@ export const serverEnv = schema.parse({
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   EMAIL_FROM: process.env.EMAIL_FROM,
   EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO,
+  MELHOR_ENVIO_TOKEN: process.env.MELHOR_ENVIO_TOKEN,
+  MELHOR_ENVIO_ENV: process.env.MELHOR_ENVIO_ENV,
 });

@@ -10,6 +10,9 @@ export const SHIPPING_METHODS = ["standard", "local", "pickup"] as const satisfi
 const int = z.number().int();
 export const shippingOptionSchema = z.object({
   method: z.enum(SHIPPING_METHODS),
+  // Carrier service from a Melhor Envio quote ("Correios PAC"); absent with the flat regional rate.
+  service_id: int.positive().optional(),
+  service: z.string().optional(),
   price_cents: int,
   min_days: int.optional(),
   max_days: int.optional(),
@@ -31,6 +34,21 @@ const ORDER: Record<ShippingMethod, number> = { local: 0, pickup: 1, standard: 2
 
 export function sortShippingOptions(options: ShippingOption[]): ShippingOption[] {
   return options.toSorted((a, b) => ORDER[a.method] - ORDER[b.method]);
+}
+
+/** Title of an option: the carrier service when quoted, else the kind of delivery. */
+export function shippingTitle(option: Pick<ShippingOption, "method" | "service">): string {
+  return option.service ?? SHIPPING_METHOD_LABEL[option.method];
+}
+
+/** One option among several carrier services. */
+export function shippingKey(option: Pick<ShippingOption, "method" | "service_id">): string {
+  return option.method === "standard" ? `standard-${option.service_id ?? "flat"}` : option.method;
+}
+
+/** How an order travels, as saved on it (the carrier service for standard shipments). */
+export function orderShippingLabel(method: ShippingMethod, service: string | null): string {
+  return method === "standard" && service && service !== "Entrega padrão" ? service : SHIPPING_METHOD_LABEL[method];
 }
 
 /** Short tag for order lists. */
