@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, useTransition, type 
 import { estimateShipping, type ShippingEstimate } from "@/app/actions/shipping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
-import { SHIPPING_METHOD_LABEL, shippingDetail, shippingPrice, sortShippingOptions } from "@/lib/shipping/options";
+import { shippingDetail, shippingKey, shippingPrice, shippingTitle, sortShippingOptions } from "@/lib/shipping/options";
 import { formatCep, onlyDigits } from "@/lib/validation/br";
 
 const ICON = { standard: Package, local: Moped, pickup: Storefront } as const;
@@ -111,11 +111,11 @@ export function ShippingCalculator({ variantId, quantity }: { variantId: string;
                 {sortShippingOptions(result.options).map((option) => {
                   const Icon = ICON[option.method];
                   return (
-                    <li key={option.method} className="flex gap-3 p-4 text-sm">
+                    <li key={shippingKey(option)} className="flex gap-3 p-4 text-sm">
                       <Icon size={20} className="mt-0.5 shrink-0 text-wine" aria-hidden="true" />
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap justify-between gap-x-3 font-semibold text-ink">
-                          {SHIPPING_METHOD_LABEL[option.method]}
+                          {shippingTitle(option)}
                           <span className="tabular-nums">{shippingPrice(option)}</span>
                         </span>
                         <span className="mt-0.5 block text-ink-muted">{shippingDetail(option)}</span>

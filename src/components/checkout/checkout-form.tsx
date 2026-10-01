@@ -13,9 +13,10 @@ import { Field, FormAlert, Input } from "@/components/ui/field";
 import type { DeliverySettings } from "@/lib/catalog/queries";
 import { cardClaim, cardOffer, formatBRL, type CardTerms } from "@/lib/money";
 import {
-  SHIPPING_METHOD_LABEL,
   shippingDetail,
+  shippingKey,
   shippingPrice,
+  shippingTitle,
   sortShippingOptions,
   type ShippingMethod,
 } from "@/lib/shipping/options";
@@ -96,7 +97,11 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
   const { items, hydrated, clear } = useCart();
   const [addressId, setAddressId] = useState(addresses[0]?.id);
   const [adding, setAdding] = useState(addresses.length === 0);
-  const [shipping, setShipping] = useState<ShippingMethod>("standard");
+  // Carrier service null: the cheapest one the database finds for the address.
+  const [shipping, setShipping] = useState<{ method: ShippingMethod; serviceId: number | null }>({
+    method: "standard",
+    serviceId: null,
+  });
   // Until the buyer picks one, a nearby address starts on the same-day courier.
   const picked = useRef(false);
   const [method, setMethod] = useState<Method>("pix");
@@ -120,14 +125,23 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
     if (!hydrated || items.length === 0 || !selectedId) return;
     const id = ++request.current;
     startQuote(async () => {
-      const result = await quoteCheckout({ items, addressId: selectedId, shipping, method, coupon }).catch(() => null);
+      const result = await quoteCheckout({
+        items,
+        addressId: selectedId,
+        shipping: shipping.method,
+        carrierService: shipping.serviceId,
+        method,
+        coupon,
+      }).catch(() => null);
       if (id !== request.current) return;
       setQuote(result);
       // Another address may not have the chosen option (local delivery is by distance): fall back.
       const options = result?.shipping_options ?? [];
-      const offers = (method: ShippingMethod) => options.some((option) => option.method === method);
-      if (!picked.current && offers("local") && shipping !== "local") setShipping("local");
-      else if (options.length && !offers(shipping)) setShipping(options[0].method);
+      if (!picked.current && shipping.method !== "local" && options.some((option) => option.method === "local")) {
+        setShipping({ method: "local", serviceId: null });
+      } else if (options.length && !result?.shipping_choice) {
+        setShipping({ method: options[0].method, serviceId: options[0].service_id ?? null });
+      }
       setError(result ? null : "Não foi possível calcular o total. Verifique sua conexão e tente de novo.");
       const couponProblem = result?.problems.find((p) => p.problem.startsWith("coupon_"));
       if (couponProblem) {
@@ -153,6 +167,11 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
   }
 
   const documentOk = !needsDocument || isValidDocument(documentDigits);
+  const cheapestCarrier = quote?.shipping_options.find((option) => option.method === "standard");
+  const selectedShipping =
+    shipping.method === "standard" && shipping.serviceId === null && cheapestCarrier
+      ? shippingKey(cheapestCarrier)
+      : shippingKey({ method: shipping.method, service_id: shipping.serviceId ?? undefined });
   const blocking = quote?.problems.filter((p) => !p.problem.startsWith("coupon_")) ?? [];
   const canPlace = enabled && selectedId && quote && blocking.length === 0 && documentOk && !quoting && !placing;
   const offer = quote && method === "credit_card" ? cardOffer(quote.total_cents, card) : null;
@@ -165,7 +184,8 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
       const result = await placeOrder({
         items,
         addressId: selectedId,
-        shipping,
+        shipping: shipping.method,
+        carrierService: shipping.serviceId,
         method,
         coupon,
         document: documentDigits,
@@ -224,15 +244,15 @@ export function CheckoutForm({ addresses, defaultName, needsDocument, pixDiscoun
                   : "";
               return (
                 <Choice
-                  key={option.method}
+                  key={shippingKey(option)}
                   name="shipping"
-                  checked={option.method === shipping}
+                  checked={shippingKey(option) === selectedShipping}
                   onChange={() => {
                     picked.current = true;
-                    setShipping(option.method);
+                    setShipping({ method: option.method, serviceId: option.service_id ?? null });
                   }}
                   icon={<Icon size={18} className="text-wine" aria-hidden="true" />}
-                  title={`${SHIPPING_METHOD_LABEL[option.method]} · ${shippingPrice(option)}`}
+                  title={`${shippingTitle(option)} · ${shippingPrice(option)}`}
                   detail={shippingDetail(option) + where}
                 />
               );

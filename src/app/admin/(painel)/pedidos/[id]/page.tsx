@@ -10,13 +10,13 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { formatDateTime } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { orderStatusLabel, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/lib/orders/status";
-import { SHIPPING_METHOD_LABEL } from "@/lib/shipping/options";
+import { orderShippingLabel } from "@/lib/shipping/options";
 import { formatCep, formatDocument, formatPhone } from "@/lib/validation/br";
 
 export const metadata: Metadata = { title: "Pedido" };
 
 const ORDER_FIELDS = `id, number, status, customer_name, customer_email, customer_phone, customer_document,
-  shipping_address, shipping_method, shipping_tracking_code, subtotal_cents, discount_cents, payment_discount_cents, shipping_cents,
+  shipping_address, shipping_method, shipping_service, shipping_tracking_code, subtotal_cents, discount_cents, payment_discount_cents, shipping_cents,
   total_cents, payment_method, installments, coupon_code, gateway_payment_id, created_at, paid_at, shipped_at,
   delivered_at, canceled_at,
   items:order_items(product_name, variant_name, sku, quantity, unit_price_cents, total_cents),
@@ -148,7 +148,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
             <dl className="grid gap-3 text-sm">
               <Detail label="Forma">
                 <span className={order.shipping_method === "standard" ? "" : "font-semibold text-wine"}>
-                  {SHIPPING_METHOD_LABEL[order.shipping_method]}
+                  {orderShippingLabel(order.shipping_method, order.shipping_service)}
                 </span>
               </Detail>
               <Detail label="Destinatário">{address.recipient_name}</Detail>

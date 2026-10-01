@@ -6,16 +6,19 @@ import { getSessionUser } from "@/lib/auth/session";
 import { cartSchema } from "@/lib/cart/schema";
 import { createPixOrBoleto, loadPayableOrder, paymentsEnabled } from "@/lib/payments/mercadopago";
 import { ensureCepLocation } from "@/lib/shipping/cep-location";
+import { carrierQuotesEnabled, ensureCarrierQuote } from "@/lib/shipping/melhor-envio";
 import { SHIPPING_METHODS, shippingOptionSchema } from "@/lib/shipping/options";
 import { createClient } from "@/lib/supabase/server";
 import { isValidDocument, onlyDigits } from "@/lib/validation/br";
 
-// The browser sends only choices (items, address, shipping, method, coupon). Every amount comes from
+// The browser sends only choices (items, address, shipping and carrier service, method, coupon). Every amount comes from
 // quote_order/create_order in the database.
 const checkoutSchema = z.object({
   items: cartSchema.min(1),
   addressId: z.uuid(),
   shipping: z.enum(SHIPPING_METHODS),
+  // Melhor Envio service id; null: the cheapest one.
+  carrierService: z.number().int().positive().nullable(),
   method: z.enum(["pix", "credit_card", "boleto"]),
   coupon: z
     .string()
@@ -34,37 +37,51 @@ const quoteSchema = z.object({
   payment_discount_cents: int,
   shipping_cents: int.nullable(),
   shipping_options: z.array(shippingOptionSchema),
+  shipping_choice: shippingOptionSchema.nullable(),
+  carrier_quoted: z.boolean(),
   total_cents: int,
   coupon_code: z.string().nullable(),
 });
 export type CheckoutQuote = z.infer<typeof quoteSchema>;
 
-function rpcArgs({ items, addressId, shipping, method, coupon }: z.infer<typeof checkoutSchema>) {
+type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+function rpcArgs({ items, addressId, shipping, carrierService, method, coupon }: CheckoutInput) {
   return {
     p_items: items.map((item) => ({ variant_id: item.variantId, quantity: item.quantity })),
     p_address_id: addressId,
     p_payment_method: method,
     p_coupon_code: coupon || undefined,
     p_shipping: shipping,
+    p_carrier_service: carrierService ?? undefined,
   };
 }
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
-/** The database prices local delivery by the address CEP's location, which must be cached first. */
-async function locateAddress(supabase: Client, addressId: string) {
+/**
+ * Prices the checkout in the database. Before that, the address CEP's location (local delivery) and
+ * the carrier quote for this cart (Melhor Envio) must be cached; both are fetched on a miss.
+ */
+async function priceCheckout(supabase: Client, input: CheckoutInput): Promise<CheckoutQuote | null> {
   // RLS: only the buyer's own address comes back.
-  const { data } = await supabase.from("addresses").select("zip_code").eq("id", addressId).maybeSingle();
-  if (data) await ensureCepLocation(data.zip_code);
+  const { data: address } = await supabase.from("addresses").select("zip_code").eq("id", input.addressId).maybeSingle();
+  if (address) await ensureCepLocation(address.zip_code);
+  const quote = async () => {
+    const { data, error } = await supabase.rpc("quote_order", rpcArgs(input));
+    return error ? null : (quoteSchema.safeParse(data).data ?? null);
+  };
+  const result = await quote();
+  if (address && result && !result.carrier_quoted && carrierQuotesEnabled()) {
+    if (await ensureCarrierQuote(address.zip_code, input.items)) return quote();
+  }
+  return result;
 }
 
 export async function quoteCheckout(input: unknown): Promise<CheckoutQuote | null> {
   const parsed = checkoutSchema.safeParse(input);
   if (!parsed.success || !(await getSessionUser())) return null;
-  const supabase = await createClient();
-  await locateAddress(supabase, parsed.data.addressId);
-  const { data, error } = await supabase.rpc("quote_order", rpcArgs(parsed.data));
-  return error ? null : (quoteSchema.safeParse(data).data ?? null);
+  return priceCheckout(await createClient(), parsed.data);
 }
 
 const ORDER_ERRORS: Record<string, string> = {
@@ -95,7 +112,8 @@ export async function placeOrder(input: unknown): Promise<{ orderId: string } | 
     if (error) return { error: "Não foi possível salvar o CPF ou CNPJ." };
   }
 
-  await locateAddress(supabase, parsed.data.addressId);
+  // Same caches as the quote the buyer saw (they may have expired since).
+  await priceCheckout(supabase, parsed.data);
   const { data, error } = await supabase.rpc("create_order", rpcArgs(parsed.data));
   if (error) return { error: ORDER_ERRORS[error.message] ?? "Não foi possível criar o pedido. Tente de novo." };
   const orderId = z.object({ order_id: z.uuid() }).safeParse(data).data?.order_id;

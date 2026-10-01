@@ -17,7 +17,7 @@ import { installmentPlan } from "@/lib/money";
 import { isPayable, ORDER_STATUS_TONE, orderStatusLabel } from "@/lib/orders/status";
 import { cardRejectionMessage, type PaymentDisplay } from "@/lib/payments/gateway";
 import { paymentsEnabled, recheckPendingPayment } from "@/lib/payments/mercadopago";
-import { SHIPPING_METHOD_LABEL, type ShippingMethod } from "@/lib/shipping/options";
+import { orderShippingLabel, type ShippingMethod } from "@/lib/shipping/options";
 import type { Enums } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { formatCep } from "@/lib/validation/br";
@@ -47,7 +47,7 @@ function statusNote(status: Enums<"order_status">, method: ShippingMethod): stri
 
 const ORDER_FIELDS = `id, number, status, payment_method, subtotal_cents, discount_cents, payment_discount_cents,
   shipping_cents, total_cents, coupon_code, expires_at, created_at, shipping_address, shipping_method,
-  shipping_tracking_code, customer_email, customer_document,
+  shipping_service, shipping_tracking_code, customer_email, customer_document,
   items:order_items(product_name, variant_name, quantity, total_cents),
   payments(provider_payment_id, status, status_detail, raw, created_at, updated_at)`;
 
@@ -195,7 +195,7 @@ export default async function OrderPage({ params }: PageProps<"/pedido/[id]">) {
         <h2 className="text-lg font-semibold text-ink">Resumo</h2>
         <OrderSummary lines={order.items} totals={order} />
         <div className="space-y-1 text-sm">
-          <h3 className="font-semibold text-ink">{SHIPPING_METHOD_LABEL[order.shipping_method]}</h3>
+          <h3 className="font-semibold text-ink">{orderShippingLabel(order.shipping_method, order.shipping_service)}</h3>
           {order.shipping_method === "pickup" ? (
             <p className="leading-relaxed text-ink-muted">
               {delivery.pickup ? delivery.pickup.address : "Combinamos a retirada pelo seu e-mail."}

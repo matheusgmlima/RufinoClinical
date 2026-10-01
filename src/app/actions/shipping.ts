@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { ensureCepLocation } from "@/lib/shipping/cep-location";
+import { carrierQuotesEnabled, ensureCarrierQuote } from "@/lib/shipping/melhor-envio";
 import { shippingOptionSchema, type ShippingOption } from "@/lib/shipping/options";
 import { createClient } from "@/lib/supabase/server";
 import { onlyDigits } from "@/lib/validation/br";
@@ -22,6 +23,7 @@ const estimateSchema = z.object({
   city: z.string().nullable(),
   state: z.string().nullable(),
   options: z.array(shippingOptionSchema),
+  carrier_quoted: z.boolean(),
 });
 
 /**
@@ -38,8 +40,13 @@ export async function estimateShipping(input: unknown): Promise<ShippingEstimate
   const { data: variant } = await supabase.from("product_variants").select("price_cents").eq("id", variantId).maybeSingle();
   if (!variant) return { error: "Não foi possível calcular o frete agora." };
 
+  const items = [{ variantId, quantity }];
   const estimate = async () => {
-    const args = { p_zip: cep, p_goods_cents: variant.price_cents * quantity };
+    const args = {
+      p_zip: cep,
+      p_goods_cents: variant.price_cents * quantity,
+      p_items: [{ variant_id: variantId, quantity }],
+    };
     const { data, error } = await supabase.rpc("estimate_shipping", args);
     return error ? null : (estimateSchema.safeParse(data).data ?? null);
   };
@@ -47,6 +54,10 @@ export async function estimateShipping(input: unknown): Promise<ShippingEstimate
   // A CEP seen for the first time is looked up and cached, then priced.
   if (result && !result.city) {
     if (!(await ensureCepLocation(cep))) return { error: "Não encontramos esse CEP. Confira os números." };
+    result = await estimate();
+  }
+  // Same for the carrier quote of this item.
+  if (result?.city && !result.carrier_quoted && carrierQuotesEnabled() && (await ensureCarrierQuote(cep, items))) {
     result = await estimate();
   }
   if (!result?.city || !result.state) return { error: "Não foi possível calcular o frete agora." };
