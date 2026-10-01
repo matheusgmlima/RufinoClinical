@@ -14,7 +14,9 @@ Lista do que falta antes de abrir a loja. Marque ao concluir.
 ## Entrega
 - [ ] Configurações → Entrega local: trocar o CEP do estoque (hoje 50030-230, centro do Recife, provisório) pelo real e conferir raio, preço e horário.
 - [ ] Retirada na loja: ligar e preencher endereço e horário reais (desligada até lá).
-- [ ] Melhor Envio para o frete do resto do Brasil (precisa da conta e do token na Vercel).
+- [x] Melhor Envio no sandbox (`MELHOR_ENVIO_TOKEN` na Vercel).
+- [ ] Melhor Envio em produção: token da conta real (melhorenvio.com.br, só "cálculo de frete") em `MELHOR_ENVIO_TOKEN` e `MELHOR_ENVIO_ENV=production` na Vercel.
+- [ ] Conferir peso e medidas reais de cada variante no painel (a cotação usa esses dados).
 
 ## Domínio e e-mail
 - [ ] Registrar o domínio e ligar na Vercel. Atualizar `NEXT_PUBLIC_SITE_URL` e as URLs de redirecionamento do Supabase Auth.
