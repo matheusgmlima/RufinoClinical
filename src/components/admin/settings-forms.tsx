@@ -214,7 +214,7 @@ export function DeliveryForm({ delivery }: { delivery: Delivery }) {
             id="local_delivery_cutoff"
             label="Pago até (horário)"
             error={errors.local_delivery_cutoff}
-            hint="Depois disso, sai no dia útil seguinte."
+            hint="Vale todos os dias. Depois disso, sai no dia seguinte."
           >
             <Input
               id="local_delivery_cutoff"

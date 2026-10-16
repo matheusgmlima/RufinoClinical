@@ -5,11 +5,12 @@ import { cartKey, MAX_CARRIER_SERVICES, parseCarrierQuote } from "./carrier";
 const correios = { id: 2, name: "Correios" };
 
 describe("parseCarrierQuote", () => {
-  it("keeps available services, cheapest first, with the account's custom price and range", () => {
+  it("keeps available Correios services, cheapest first, with the account's custom price and range", () => {
     const services = parseCarrierQuote([
       { id: 2, name: "SEDEX", price: "40.10", custom_price: "42.30", delivery_range: { min: 1, max: 2 }, custom_delivery_range: { min: 2, max: 3 }, company: correios },
       { id: 1, name: "PAC", price: "24.90", custom_price: "24.90", delivery_range: { min: 5, max: 7 }, company: correios },
-      { id: 3, name: ".Package", error: "Transportadora não atende este trecho.", company: { id: 2, name: "Jadlog" } },
+      { id: 3, name: ".Package", price: "19.90", delivery_range: { min: 4, max: 5 }, company: { id: 2, name: "Jadlog" } },
+      { id: 17, name: "Mini Envios", error: "Dimensões acima do limite.", company: correios },
       { id: 4, name: "Broken", price: "abc", delivery_range: { min: 1, max: 2 }, company: correios },
     ]);
     expect(services).toEqual([

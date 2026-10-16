@@ -105,8 +105,8 @@ export default async function ProductPage({ params }: PageProps<"/produtos/[slug
                         <strong className="font-semibold text-ink">
                           Entrega no mesmo dia em {delivery.local.city ?? "nossa cidade"} e região
                         </strong>{" "}
-                        por {formatBRL(delivery.local.priceCents)}, pagando até {formatCutoff(delivery.local.cutoff)} em
-                        dia útil
+                        por {formatBRL(delivery.local.priceCents)}, pagando até {formatCutoff(delivery.local.cutoff)}, todos
+                        os dias
                       </span>
                     </li>
                   ) : null}

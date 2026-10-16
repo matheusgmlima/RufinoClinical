@@ -13,8 +13,8 @@ describe("shipping options", () => {
       { method: "pickup", price_cents: 0 },
     ]);
     expect(parsed.map(shippingPrice)).toEqual([formatBRL(1990), formatBRL(1500), "Grátis"]);
-    expect(shippingDetail(parsed[0])).toBe("3 a 7 dias úteis após a postagem.");
-    expect(shippingDetail(parsed[1])).toContain("Chega hoje com pagamento confirmado até 16h em dia útil.");
+    expect(shippingDetail(parsed[0])).toBe("Postagem em até 2 dias úteis e entrega em 3 a 7 dias úteis.");
+    expect(shippingDetail(parsed[1])).toContain("Chega hoje com pagamento confirmado até 16h, todos os dias.");
     expect(sortShippingOptions(parsed).map((option) => option.method)).toEqual(["local", "pickup", "standard"]);
     expect(() => shippingOptionSchema.parse({ method: "drone", price_cents: 0 })).toThrow();
   });

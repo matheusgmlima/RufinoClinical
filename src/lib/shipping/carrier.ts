@@ -6,6 +6,9 @@ export type CartItem = { variantId: string; quantity: number };
 
 export type CarrierService = { id: number; service: string; price_cents: number; min_days: number; max_days: number };
 
+// The store ships only with Correios (other carriers need a drop-off at their own agencies).
+const CARRIER = "Correios";
+
 /** Up to this many carrier services are offered, cheapest first. */
 export const MAX_CARRIER_SERVICES = 4;
 
@@ -33,8 +36,8 @@ const serviceSchema = z.object({
 });
 
 /**
- * Services from a Melhor Envio quote. Unavailable ones (with `error`) and malformed entries are
- * dropped; the custom price and range are used, as they carry the account's own rules.
+ * Correios services from a Melhor Envio quote. Other carriers, unavailable services (with `error`)
+ * and malformed entries are dropped; the custom price and range are used, as they carry the account's own rules.
  */
 export function parseCarrierQuote(body: unknown): CarrierService[] {
   if (!Array.isArray(body)) return [];
@@ -43,6 +46,7 @@ export function parseCarrierQuote(body: unknown): CarrierService[] {
     const parsed = serviceSchema.safeParse(entry);
     if (!parsed.success || parsed.data.error) continue;
     const { id, name, company } = parsed.data;
+    if (company.name !== CARRIER) continue;
     const price = parsed.data.custom_price ?? parsed.data.price;
     const window = parsed.data.custom_delivery_range ?? parsed.data.delivery_range;
     if (price === undefined || !window) continue;

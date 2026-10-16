@@ -58,6 +58,9 @@ export const SHIPPING_METHOD_SHORT: Record<ShippingMethod, string> = {
   pickup: "Retirada",
 };
 
+/** Business days the store takes to post a carrier order. */
+export const HANDLING_DAYS = 2;
+
 /** "16:00" -> "16h", "16:30" -> "16h30". */
 export function formatCutoff(cutoff: string): string {
   const [hours, minutes] = cutoff.split(":");
@@ -72,12 +75,12 @@ export function shippingPrice(option: ShippingOption): string {
 export function shippingDetail(option: ShippingOption): string {
   switch (option.method) {
     case "local":
-      return `Chega hoje com pagamento confirmado até ${formatCutoff(option.cutoff ?? "16:00")} em dia útil. Depois disso, no dia útil seguinte.`;
+      return `Chega hoje com pagamento confirmado até ${formatCutoff(option.cutoff ?? "16:00")}, todos os dias. Depois disso, no dia seguinte.`;
     case "pickup":
       return "Avisamos quando estiver pronto para retirar.";
     default:
       return option.min_days && option.max_days
-        ? `${option.min_days} a ${option.max_days} dias úteis após a postagem.`
+        ? `Postagem em até ${HANDLING_DAYS} dias úteis e entrega em ${option.min_days} a ${option.max_days} dias úteis.`
         : "Prazo informado na postagem.";
   }
 }
